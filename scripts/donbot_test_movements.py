@@ -32,6 +32,7 @@ class Test(object):
         controller.p_gain = 3
         controller.enable_error_threshold = True
         controller.threshold_value = 0.05
+        controller.weight = 1.0
         goal.controllers.append(controller)
 
         # rotation
@@ -45,6 +46,7 @@ class Test(object):
         controller.p_gain = 3
         controller.enable_error_threshold = True
         controller.threshold_value = 0.2
+        controller.weight = 1.0
         goal.controllers.append(controller)
 
         self.client.send_goal(goal)
@@ -64,8 +66,9 @@ class Test(object):
         controller.goal_state = joint_state
 
         controller.p_gain = 3
-        controller.enable_error_threshold = True
+        controller.enable_error_threshold = False
         controller.threshold_value = 0.05
+        controller.weight = 1.0
         goal.controllers.append(controller)
 
         self.client.send_goal(goal)
@@ -75,7 +78,7 @@ class Test(object):
 if __name__ == '__main__':
     rospy.init_node('donbot_test_movements')
 
-    test = Test(action_server_name='move')
+    test = Test(action_server_name='/move')
 
     joint_state = JointState()
     joint_state.name = ['ur5_shoulder_pan_joint',
