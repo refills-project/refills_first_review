@@ -1,0 +1,8 @@
+<launch>
+  <remap from="/move" to="/qp_controller/command"/>
+
+  <node pkg="refills_first_review" type="donbot_test_movements.py" name="donbot_test_movements" >
+    <remap from="/move" to="/qp_controller/command"/>
+  </node>
+  
+</launch>
