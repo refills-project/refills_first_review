@@ -76,6 +76,7 @@ if __name__ == '__main__':
     rospy.init_node('donbot_test_movements')
 
     test = Test(action_server_name='move')
+
     joint_state = JointState()
     joint_state.name = ['ur5_shoulder_pan_joint',
                         'ur5_shoulder_lift_joint',
@@ -103,9 +104,9 @@ if __name__ == '__main__':
     goal.pose.position = Point(0,0,0)
     goal.pose.orientation = Quaternion(0.0 , 0.0, 0.70710678, 0.70710678)
     test.send_cart_goal(goal)
-    
+
     goal = PoseStamped()
     goal.header.frame_id = 'gripper_tool_frame'
     goal.pose.position = Point(0,-0.1,0)
-    goal.pose.orientation = Quaternion(0.35355339,  0.35355339, -0.14644661,  0.85355339)
+    goal.pose.orientation = Quaternion(-0.35355339, -0.35355339, -0.14644661,  0.85355339)
     test.send_cart_goal(goal)
