@@ -3,7 +3,6 @@
 from __future__ import print_function
 import rospy
 import actionlib
-import sys
 
 from actionlib.simple_action_client import SimpleActionClient
 from geometry_msgs.msg._Point import Point
@@ -16,8 +15,6 @@ from move_base_msgs.msg._MoveBaseAction import MoveBaseAction
 from move_base_msgs.msg._MoveBaseGoal import MoveBaseGoal
 from sensor_msgs.msg._JointState import JointState
 from std_msgs.msg._Header import Header
-from tf.transformations import quaternion_from_euler, quaternion_from_matrix
-from numpy import pi
 
 
 class MoveBase(object):
@@ -190,19 +187,6 @@ class MoveArm(object):
                                 1.81282937527, ]
         self.send_joint_goal(joint_state)
 
-    def start_pose2(self):
-        joint_state = JointState()
-        joint_state.name = self.joint_names
-        joint_state.position = [
-            -1.53237945238,
-            -1.84613782564,
-            1.56202888489,
-            -2.5961616675,
-            -1.60827237764,
-            1.58059763908,
-        ]
-        self.send_joint_goal(joint_state)
-
     def start_pose_row4(self):
         joint_state = JointState()
         joint_state.name = self.joint_names
@@ -310,13 +294,6 @@ def scan_shelf2(move_arm, move_base):
     move_base.relative_pose([-SHELF_LENGTH, 0.0, 0], [0, 0, 0, 1])
     move_base.relative_pose([0.0, 0.12, 0], [0, 0, 0, 1])
 
-    # back to default
-    # move_base.goto_shelf2()
-    # move_arm.start_pose_row4()
-    # move_arm.drive_pose()
-    # move_base.relative_pose([0.0, 0.32, 0], [0, 0, 0, 1])
-
-
 def scan_shelf3(move_arm, move_base):
     # row 4
     move_base.goto_shelf3()
@@ -382,6 +359,6 @@ if __name__ == '__main__':
     move_arm = MoveArm(True)
 
     scan_shelf1(move_arm, move_base)
-    # scan_shelf2(move_arm, move_base)
-    # scan_shelf3(move_arm, move_base)
-    # scan_shelf4(move_arm, move_base)
+    scan_shelf2(move_arm, move_base)
+    scan_shelf3(move_arm, move_base)
+    scan_shelf4(move_arm, move_base)
