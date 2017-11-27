@@ -15,6 +15,8 @@ from move_base_msgs.msg._MoveBaseAction import MoveBaseAction
 from move_base_msgs.msg._MoveBaseGoal import MoveBaseGoal
 from sensor_msgs.msg._JointState import JointState
 from std_msgs.msg._Header import Header
+from tf.transformations import quaternion_from_euler
+from numpy import pi
 
 
 class MoveBase(object):
@@ -73,7 +75,7 @@ class MoveBase(object):
         header.frame_id = 'map'
         shelf.header = header
         shelf.pose.position = Point(2.085, 0.55, 0.000)
-        shelf.pose.orientation = Quaternion(0.0, 0.0, 1.0, 0.0)
+        shelf.pose.orientation = Quaternion(*quaternion_from_euler(0,0,pi*.98))
         self(shelf)
 
     def goto_shelf4(self):
@@ -81,8 +83,8 @@ class MoveBase(object):
         header = Header()
         header.frame_id = 'map'
         shelf.header = header
-        shelf.pose.position = Point(3.0, 0.55, 0.000)
-        shelf.pose.orientation = Quaternion(0.0, 0.0, 1.0, 0.0)
+        shelf.pose.position = Point(2.95, 0.55, 0.000)
+        shelf.pose.orientation = Quaternion(*quaternion_from_euler(0,0,pi*.99))
         self(shelf)
 
 
@@ -238,7 +240,7 @@ class MoveArm(object):
         self.send_joint_goal(joint_state)
 
 
-SHELF_LENGTH = 0.85
+SHELF_LENGTH = 0.9
 
 
 def scan_shelf1(move_arm, move_base):
@@ -251,7 +253,7 @@ def scan_shelf1(move_arm, move_base):
 
     # row 3
     move_arm.relative_goal([0., 0.2, 0], [0, 0, 0, 1])
-    move_base.relative_pose([SHELF_LENGTH, 0, 0], [0, 0, 0, 1])
+    move_base.goto_shelf1()
 
     # row 2
     move_arm.relative_goal([0., 0.3, 0], [0, 0, 0, 1])
@@ -259,7 +261,7 @@ def scan_shelf1(move_arm, move_base):
 
     # row 1
     move_arm.relative_goal([0., 0.35, 0], [0, 0, 0, 1])
-    move_base.relative_pose([SHELF_LENGTH, 0, 0], [0, 0, 0, 1])
+    move_base.goto_shelf1()
 
     # row 0
     move_arm.shelf1_row0_pose()
@@ -295,6 +297,7 @@ def scan_shelf2(move_arm, move_base):
     move_base.relative_pose([0.0, 0.12, 0], [0, 0, 0, 1])
 
 def scan_shelf3(move_arm, move_base):
+    pass
     # row 4
     move_base.goto_shelf3()
     move_arm.start_pose_row4()
@@ -319,22 +322,24 @@ def scan_shelf3(move_arm, move_base):
 
 
 def scan_shelf4(move_arm, move_base):
+    to_close_to_wall_fix = 0.08
+    short_shelf_length = SHELF_LENGTH
     # row 0
     move_base.goto_shelf4()
     move_arm.shelf1_row0_pose()
-    move_arm.relative_goal([0.05, 0.0, 0], [0, 0, 0, 1])
+    move_arm.relative_goal([to_close_to_wall_fix, 0.0, 0], [0, 0, 0, 1])
     move_base.relative_pose([0.0, -0.1, 0], [0, 0, 0, 1])
-    move_base.relative_pose([-SHELF_LENGTH, 0.0, 0], [0, 0, 0, 1])
+    move_base.relative_pose([-short_shelf_length, 0.0, 0], [0, 0, 0, 1])
 
     # row 1
     move_base.relative_pose([0.0, 0.1, 0], [0, 0, 0, 1])
     move_arm.shelf1_row1_pose()
-    move_arm.relative_goal([0.05, 0.1, 0], [0, 0, 0, 1])
+    move_arm.relative_goal([to_close_to_wall_fix, 0.1, 0], [0, 0, 0, 1])
     move_base.goto_shelf4()
 
     # row 2
     move_arm.relative_goal([0., -0.25, 0], [0, 0, 0, 1])
-    move_base.relative_pose([-SHELF_LENGTH, 0.0, 0], [0, 0, 0, 1])
+    move_base.relative_pose([-short_shelf_length, 0.0, 0], [0, 0, 0, 1])
 
     # row 3
     move_arm.relative_goal([0., -0.25, 0], [0, 0, 0, 1])
@@ -342,7 +347,7 @@ def scan_shelf4(move_arm, move_base):
 
     # row 4
     move_arm.relative_goal([0., -0.25, 0], [0, 0, 0, 1])
-    move_base.relative_pose([-SHELF_LENGTH, 0.0, 0], [0, 0, 0, 1])
+    move_base.relative_pose([-short_shelf_length, 0.0, 0], [0, 0, 0, 1])
 
     # row 5
     move_arm.relative_goal([0., -0.2, 0], [0, 0, 0, 1])
