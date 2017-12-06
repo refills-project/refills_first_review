@@ -28,6 +28,7 @@ class MoveBase(object):
         print('connected')
         self.goal_pub = rospy.Publisher('move_base_goal', PoseStamped, queue_size=10)
         rospy.sleep(0.5)
+        self.dist_to_shelfs = 1.4
 
     def __call__(self, target_pose):
         # self.client.cancel_all_goals()
@@ -56,8 +57,8 @@ class MoveBase(object):
         header = Header()
         header.frame_id = 'map'
         shelf.header = header
-        shelf.pose.position = Point(0.135, 0.55, 0.0)
-        shelf.pose.orientation = Quaternion(0.0, 0.0, 1.0, 0.0)
+        shelf.pose.position = Point(-0.0, self.dist_to_shelfs, 0.0)
+        shelf.pose.orientation = Quaternion(0.0, 0.0, 0.0, 1.0)
         self(shelf)
 
     def goto_shelf2(self):
@@ -65,8 +66,8 @@ class MoveBase(object):
         header = Header()
         header.frame_id = 'map'
         shelf.header = header
-        shelf.pose.position = Point(1.085, 0.55, 0.0)
-        shelf.pose.orientation = Quaternion(0.0, 0.0, 1.0, 0.0)
+        shelf.pose.position = Point(-1.0, self.dist_to_shelfs, 0.0)
+        shelf.pose.orientation = Quaternion(0.0, 0.0, 0.0, 1.0)
         self(shelf)
 
     def goto_shelf3(self):
@@ -74,8 +75,9 @@ class MoveBase(object):
         header = Header()
         header.frame_id = 'map'
         shelf.header = header
-        shelf.pose.position = Point(2.085, 0.55, 0.000)
-        shelf.pose.orientation = Quaternion(*quaternion_from_euler(0,0,pi*.98))
+        shelf.pose.position = Point(-2.0, self.dist_to_shelfs, 0.000)
+        shelf.pose.orientation = Quaternion(0.0, 0.0, 0.0, 1.0)
+        # shelf.pose.orientation = Quaternion(*quaternion_from_euler(0,0,pi*.98))
         self(shelf)
 
     def goto_shelf4(self):
@@ -83,8 +85,9 @@ class MoveBase(object):
         header = Header()
         header.frame_id = 'map'
         shelf.header = header
-        shelf.pose.position = Point(2.95, 0.55, 0.000)
-        shelf.pose.orientation = Quaternion(*quaternion_from_euler(0,0,pi*.99))
+        shelf.pose.position = Point(-2.9, self.dist_to_shelfs, 0.000)
+        shelf.pose.orientation = Quaternion(0.0, 0.0, 0.0, 1.0)
+        # shelf.pose.orientation = Quaternion(*quaternion_from_euler(0,0,pi*.99))
         self(shelf)
 
 
@@ -240,7 +243,7 @@ class MoveArm(object):
         self.send_joint_goal(joint_state)
 
 
-SHELF_LENGTH = 0.9
+SHELF_LENGTH = 1.0
 
 
 def scan_shelf1(move_arm, move_base):
