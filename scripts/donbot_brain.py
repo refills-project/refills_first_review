@@ -1,10 +1,14 @@
 #!/usr/bin/env python
 
 from __future__ import print_function
+
+from multiprocessing import TimeoutError
+
 import rospy
 import actionlib
 
 from actionlib.simple_action_client import SimpleActionClient
+from actionlib_msgs.msg import GoalStatus
 from geometry_msgs.msg._Point import Point
 from geometry_msgs.msg._PoseStamped import PoseStamped
 from geometry_msgs.msg._Quaternion import Quaternion
@@ -28,6 +32,7 @@ class MoveBase(object):
         print('connected')
         self.goal_pub = rospy.Publisher('move_base_goal', PoseStamped, queue_size=10)
         rospy.sleep(0.5)
+        self.timeout = 30
         self.dist_to_shelfs = 1.4
 
     def __call__(self, target_pose):
@@ -37,8 +42,12 @@ class MoveBase(object):
             goal = MoveBaseGoal()
             goal.target_pose = target_pose
             self.client.send_goal(goal)
-            self.client.wait_for_result(rospy.Duration(30))
+            wait_result = self.client.wait_for_result(rospy.Duration(self.timeout))
             result = self.client.get_result()
+            state = self.client.get_state()
+            if not wait_result or state != GoalStatus.SUCCEEDED:
+                print('movement did not finish in time')
+                raise TimeoutError()
             rospy.loginfo('arrived at base goal {}'.format(result))
             return result
 
@@ -264,6 +273,7 @@ def scan_shelf1(move_arm, move_base):
 
     # row 1
     move_arm.relative_goal([0., 0.35, 0], [0, 0, 0, 1])
+    # return
     move_base.goto_shelf1()
 
     # row 0
@@ -326,7 +336,7 @@ def scan_shelf3(move_arm, move_base):
 
 def scan_shelf4(move_arm, move_base):
     to_close_to_wall_fix = 0.08
-    short_shelf_length = SHELF_LENGTH
+    short_shelf_length = SHELF_LENGTH - 0.14
     # row 0
     move_base.goto_shelf4()
     move_arm.shelf1_row0_pose()
@@ -363,10 +373,20 @@ def scan_shelf4(move_arm, move_base):
 if __name__ == '__main__':
     rospy.init_node('brain')
     move_base = MoveBase(True)
-    move_base.client.cancel_all_goals()
     move_arm = MoveArm(True)
-
-    scan_shelf1(move_arm, move_base)
-    scan_shelf2(move_arm, move_base)
-    scan_shelf3(move_arm, move_base)
-    scan_shelf4(move_arm, move_base)
+    move_base.client.cancel_all_goals()
+    move_arm.client.cancel_all_goals()
+    try:
+        scan_shelf1(move_arm, move_base)
+        scan_shelf2(move_arm, move_base)
+        scan_shelf3(move_arm, move_base)
+        scan_shelf4(move_arm, move_base)
+    except Exception as e:
+        print('{}: {}'.format(e.__class__, e.message))
+    finally:
+        print('canceling all goals')
+        move_base.client.cancel_goal()
+        move_base.client.cancel_all_goals()
+        move_arm.client.cancel_goal()
+        move_arm.client.cancel_all_goals()
+        rospy.sleep(1)
