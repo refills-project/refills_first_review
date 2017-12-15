@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import json
 import numpy as np
 from time import localtime
