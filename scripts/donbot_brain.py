@@ -2,6 +2,7 @@
 
 from __future__ import print_function
 
+from collections import OrderedDict
 from multiprocessing import TimeoutError
 
 import rospy
@@ -17,10 +18,166 @@ from giskard_msgs.msg._ControllerListAction import ControllerListAction
 from giskard_msgs.msg._ControllerListGoal import ControllerListGoal
 from move_base_msgs.msg._MoveBaseAction import MoveBaseAction
 from move_base_msgs.msg._MoveBaseGoal import MoveBaseGoal
+from refills_msgs.srv import CountObjects, CountObjectsRequest, CountObjectsResponse
+from rospy_message_converter.message_converter import convert_dictionary_to_ros_message, \
+    convert_ros_message_to_dictionary
 from sensor_msgs.msg._JointState import JointState
 from std_msgs.msg._Header import Header
 from tf.transformations import quaternion_from_euler
 from numpy import pi
+
+knowrob = OrderedDict([
+    ('separators', [0.01, 0.161, .223, .285, .37, .512, .616, .758, .864, 0.98]),
+    ('500183', [
+        {'separator_location': {'header': {'stamp': {'secs': 0,
+                                                     'nsecs': 0},
+                                           'frame_id': '/map',
+                                           'seq': 0},
+                                'pose': {'position': {'x': -0.01,
+                                                      'y': 0.515 - 0.1,
+                                                      'z': 0.16 + 0.4},
+                                         'orientation': {'y': 0.0,
+                                                         'x': 0.0,
+                                                         'z': 0.0,
+                                                         'w': 1.0}}},
+         'object_name': '500183',
+         'obj_width': 140,
+         'obj_height': 200,
+         'obj_depth': 41},
+    ]),
+    ('046088', [
+        {'separator_location': {'header': {'stamp': {'secs': 0,
+                                                     'nsecs': 0},
+                                           'frame_id': '/map',
+                                           'seq': 0},
+                                'pose': {'position': {'x': -0.161,
+                                                      'y': 0.515 - 0.1,
+                                                      'z': 0.16 + 0.4},
+                                         'orientation': {'y': 0.0,
+                                                         'x': 0.0,
+                                                         'z': 0.0,
+                                                         'w': 1.0}}},
+         'object_name': '046088',
+         'obj_width': 45,
+         'obj_height': 150,
+         'obj_depth': 40},
+        {'separator_location': {'header': {'stamp': {'secs': 0,
+                                                     'nsecs': 0},
+                                           'frame_id': '/map',
+                                           'seq': 0},
+                                'pose': {'position': {'x': -0.223,
+                                                      'y': 0.515 - 0.1,
+                                                      'z': 0.16 + 0.4},
+                                         'orientation': {'y': 0.0,
+                                                         'x': 0.0,
+                                                         'z': 0.0,
+                                                         'w': 1.0}}},
+         'object_name': '046088',
+         'obj_width': 45,
+         'obj_height': 150,
+         'obj_depth': 40},
+    ]),
+    ('262289', [
+        {'separator_location': {'header': {'stamp': {'secs': 0,
+                                                     'nsecs': 0},
+                                           'frame_id': '/map',
+                                           'seq': 0},
+                                'pose': {'position': {'x': -0.285,
+                                                      'y': 0.515 - 0.1,
+                                                      'z': 0.16 + 0.4},
+                                         'orientation': {'y': 0.0,
+                                                         'x': 0.0,
+                                                         'z': 0.0,
+                                                         'w': 1.0}}},
+         'object_name': '262289',
+         'obj_width': 45,
+         'obj_height': 150,
+         'obj_depth': 40},
+    ]),
+    ('010055', [
+        {'separator_location': {'header': {'stamp': {'secs': 0,
+                                                     'nsecs': 0},
+                                           'frame_id': '/map',
+                                           'seq': 0},
+                                'pose': {'position': {'x': -0.37,
+                                                      'y': 0.515 - 0.1,
+                                                      'z': 0.16 + 0.4},
+                                         'orientation': {'y': 0.0,
+                                                         'x': 0.0,
+                                                         'z': 0.0,
+                                                         'w': 1.0}}},
+         'object_name': '010055',
+         'obj_width': 130,
+         'obj_height': 210,
+         'obj_depth': 45},
+    ]),
+    ('015652', [
+        {'separator_location': {'header': {'stamp': {'secs': 0,
+                                                     'nsecs': 0},
+                                           'frame_id': '/map',
+                                           'seq': 0},
+                                'pose': {'position': {'x': -0.512,
+                                                      'y': 0.515 - 0.1,
+                                                      'z': 0.16 + 0.4},
+                                         'orientation': {'y': 0.0,
+                                                         'x': 0.0,
+                                                         'z': 0.0,
+                                                         'w': 1.0}}},
+         'object_name': '015652',
+         'obj_width': 75,
+         'obj_height': 290,
+         'obj_depth': 50},
+    ]),
+    ('516937', [
+        {'separator_location': {'header': {'stamp': {'secs': 0,
+                                                     'nsecs': 0},
+                                           'frame_id': '/map',
+                                           'seq': 0},
+                                'pose': {'position': {'x': -0.616,
+                                                      'y': 0.515 - 0.1,
+                                                      'z': 0.16 + 0.4},
+                                         'orientation': {'y': 0.0,
+                                                         'x': 0.0,
+                                                         'z': 0.0,
+                                                         'w': 1.0}}},
+         'object_name': '516937',
+         'obj_width': 130,
+         'obj_height': 200,
+         'obj_depth': 100},
+    ]),
+    ('125481', [
+        {'separator_location': {'header': {'stamp': {'secs': 0,
+                                                     'nsecs': 0},
+                                           'frame_id': '/map',
+                                           'seq': 0},
+                                'pose': {'position': {'x': -0.758,
+                                                      'y': 0.515 - 0.1,
+                                                      'z': 0.16 + 0.4},
+                                         'orientation': {'y': 0.0,
+                                                         'x': 0.0,
+                                                         'z': 0.0,
+                                                         'w': 1.0}}},
+         'object_name': '125481',
+         'obj_width': 90,
+         'obj_height': 250,
+         'obj_depth': 70},
+        {'separator_location': {'header': {'stamp': {'secs': 0,
+                                                     'nsecs': 0},
+                                           'frame_id': '/map',
+                                           'seq': 0},
+                                'pose': {'position': {'x': -0.864,
+                                                      'y': 0.515 - 0.1,
+                                                      'z': 0.16 + 0.4},
+                                         'orientation': {'y': 0.0,
+                                                         'x': 0.0,
+                                                         'z': 0.0,
+                                                         'w': 1.0}}},
+         'object_name': '125481',
+         'obj_width': 90,
+         'obj_height': 250,
+         'obj_depth': 70},
+    ]),
+])
 
 
 class MoveBase(object):
@@ -251,142 +408,210 @@ class MoveArm(object):
                                 1.5231782198, ]
         self.send_joint_goal(joint_state)
 
+    def counting_pose(self):
+        joint_state = JointState()
+        joint_state.name = self.joint_names
+        joint_state.position = [-1.60456067721,
+                                -1.63770848909,
+                                2.34750556946,
+                                -3.24711829821,
+                                -1.54815704027,
+                                1.58525156975,]
+        self.send_joint_goal(joint_state)
+
 
 SHELF_LENGTH = 1.0
 
 
-def scan_shelf1(move_arm, move_base):
-    move_arm.drive_pose()
-    move_base.goto_shelf1()
+class CRAM(object):
+    def __init__(self):
+        self.move_base = MoveBase(True)
+        self.move_arm = MoveArm(True)
+        self.counting_service = rospy.ServiceProxy('/count_objects_node/count', CountObjects)
+        self.magic_offset = 0.05
 
-    # row4
-    move_arm.start_pose_row4()
-    move_base.relative_pose([-SHELF_LENGTH, 0, 0], [0, 0, 0, 1])
+    def scan_shelf1(self):
+        self.move_arm.drive_pose()
+        self.move_base.goto_shelf1()
 
-    # row 3
-    move_arm.relative_goal([0., 0.2, 0], [0, 0, 0, 1])
-    move_base.goto_shelf1()
+        # row4
+        self.move_arm.start_pose_row4()
+        self.move_base.relative_pose([-SHELF_LENGTH, 0, 0], [0, 0, 0, 1])
 
-    # row 2
-    move_arm.relative_goal([0., 0.3, 0], [0, 0, 0, 1])
-    move_base.relative_pose([-SHELF_LENGTH, 0, 0], [0, 0, 0, 1])
+        # row 3
+        self.move_arm.relative_goal([0., 0.2, 0], [0, 0, 0, 1])
+        self.move_base.goto_shelf1()
 
-    # row 1
-    move_arm.relative_goal([0., 0.35, 0], [0, 0, 0, 1])
-    # return
-    move_base.goto_shelf1()
+        # row 2
+        self.move_arm.relative_goal([0., 0.3, 0], [0, 0, 0, 1])
+        self.move_base.relative_pose([-SHELF_LENGTH, 0, 0], [0, 0, 0, 1])
 
-    # row 0
-    move_arm.shelf1_row0_pose()
-    move_base.relative_pose([0.0, -0.12, 0], [0, 0, 0, 1])
-    move_base.relative_pose([-SHELF_LENGTH, 0.0, 0], [0, 0, 0, 1])
+        # row 1
+        self.move_arm.relative_goal([0., 0.35, 0], [0, 0, 0, 1])
+        self.move_base.goto_shelf1()
 
+        # row 0
+        self.move_arm.shelf1_row0_pose()
+        self.move_base.relative_pose([0.0, -0.12, 0], [0, 0, 0, 1])
+        self.move_base.relative_pose([-SHELF_LENGTH, 0.0, 0], [0, 0, 0, 1])
 
-def scan_shelf2(move_arm, move_base):
-    # row 0
-    move_base.goto_shelf2()
-    move_arm.shelf1_row0_pose()
-    move_base.relative_pose([0.0, -0.12, 0], [0, 0, 0, 1])
-    move_base.relative_pose([-SHELF_LENGTH, 0.0, 0], [0, 0, 0, 1])
-    move_base.relative_pose([0.0, 0.12, 0], [0, 0, 0, 1])
+    def scan_shelf2(self):
+        # row 0
+        self.move_base.goto_shelf2()
+        self.move_arm.shelf1_row0_pose()
+        self.move_base.relative_pose([0.0, -0.12, 0], [0, 0, 0, 1])
+        self.move_base.relative_pose([-SHELF_LENGTH, 0.0, 0], [0, 0, 0, 1])
+        self.move_base.relative_pose([0.0, 0.12, 0], [0, 0, 0, 1])
 
-    # row 1
-    move_arm.shelf1_row1_pose()
-    move_arm.relative_goal([0., 0.15, 0], [0, 0, 0, 1])
-    move_base.goto_shelf2()
+        # row 1
+        self.move_arm.shelf1_row1_pose()
+        self.move_arm.relative_goal([0., 0.15, 0], [0, 0, 0, 1])
+        self.move_base.goto_shelf2()
 
-    # row 2
-    move_arm.relative_goal([0., -0.2, 0], [0, 0, 0, 1])
-    move_base.relative_pose([-SHELF_LENGTH, 0.0, 0], [0, 0, 0, 1])
+        # row 2
+        self.move_arm.relative_goal([0., -0.2, 0], [0, 0, 0, 1])
+        self.move_base.relative_pose([-SHELF_LENGTH, 0.0, 0], [0, 0, 0, 1])
 
-    # row 3
-    move_arm.relative_goal([0., -0.5, 0], [0, 0, 0, 1])
-    move_base.relative_pose([0.0, -0.12, 0], [0, 0, 0, 1])
-    move_base.relative_pose([SHELF_LENGTH, 0.0, 0], [0, 0, 0, 1])
+        # row 3
+        self.move_arm.relative_goal([0., -0.5, 0], [0, 0, 0, 1])
+        self.move_base.relative_pose([0.0, -0.12, 0], [0, 0, 0, 1])
+        self.move_base.relative_pose([SHELF_LENGTH, 0.0, 0], [0, 0, 0, 1])
 
-    # row 4
-    move_arm.relative_goal([0., -0.3, 0], [0, 0, 0, 1])
-    move_base.relative_pose([-SHELF_LENGTH, 0.0, 0], [0, 0, 0, 1])
-    move_base.relative_pose([0.0, 0.12, 0], [0, 0, 0, 1])
+        # row 4
+        self.move_arm.relative_goal([0., -0.3, 0], [0, 0, 0, 1])
+        self.move_base.relative_pose([-SHELF_LENGTH, 0.0, 0], [0, 0, 0, 1])
+        self.move_base.relative_pose([0.0, 0.12, 0], [0, 0, 0, 1])
 
-def scan_shelf3(move_arm, move_base):
-    pass
-    # row 4
-    move_base.goto_shelf3()
-    move_arm.start_pose_row4()
-    move_base.relative_pose([-SHELF_LENGTH, 0.0, 0], [0, 0, 0, 1])
+    def scan_shelf3(self):
+        pass
+        # row 4
+        self.move_base.goto_shelf3()
+        self.move_arm.start_pose_row4()
+        self.move_base.relative_pose([-SHELF_LENGTH, 0.0, 0], [0, 0, 0, 1])
 
-    # row 3
-    move_arm.relative_goal([0., 0.35, 0], [0, 0, 0, 1])
-    move_base.goto_shelf3()
+        # row 3
+        self.move_arm.relative_goal([0., 0.35, 0], [0, 0, 0, 1])
+        self.move_base.goto_shelf3()
 
-    # row 2
-    move_arm.relative_goal([0., 0.3, 0], [0, 0, 0, 1])
-    move_base.relative_pose([-SHELF_LENGTH, 0.0, 0], [0, 0, 0, 1])
+        # row 2
+        self.move_arm.relative_goal([0., 0.3, 0], [0, 0, 0, 1])
+        self.move_base.relative_pose([-SHELF_LENGTH, 0.0, 0], [0, 0, 0, 1])
 
-    # row 1
-    move_arm.relative_goal([0., 0.3, 0], [0, 0, 0, 1])
-    move_base.goto_shelf3()
+        # row 1
+        self.move_arm.relative_goal([0., 0.3, 0], [0, 0, 0, 1])
+        self.move_base.goto_shelf3()
 
-    # row 0
-    move_arm.shelf1_row0_pose()
-    move_base.relative_pose([0.0, -0.12, 0], [0, 0, 0, 1])
-    move_base.relative_pose([-SHELF_LENGTH, 0.0, 0], [0, 0, 0, 1])
+        # row 0
+        self.move_arm.shelf1_row0_pose()
+        self.move_base.relative_pose([0.0, -0.12, 0], [0, 0, 0, 1])
+        self.move_base.relative_pose([-SHELF_LENGTH, 0.0, 0], [0, 0, 0, 1])
 
+    def scan_shelf4(self):
+        to_close_to_wall_fix = 0.08
+        short_shelf_length = SHELF_LENGTH - 0.14
+        # row 0
+        self.move_base.goto_shelf4()
+        self.move_arm.shelf1_row0_pose()
+        self.move_arm.relative_goal([to_close_to_wall_fix, 0.0, 0], [0, 0, 0, 1])
+        self.move_base.relative_pose([0.0, -0.1, 0], [0, 0, 0, 1])
+        self.move_base.relative_pose([-short_shelf_length, 0.0, 0], [0, 0, 0, 1])
 
-def scan_shelf4(move_arm, move_base):
-    to_close_to_wall_fix = 0.08
-    short_shelf_length = SHELF_LENGTH - 0.14
-    # row 0
-    move_base.goto_shelf4()
-    move_arm.shelf1_row0_pose()
-    move_arm.relative_goal([to_close_to_wall_fix, 0.0, 0], [0, 0, 0, 1])
-    move_base.relative_pose([0.0, -0.1, 0], [0, 0, 0, 1])
-    move_base.relative_pose([-short_shelf_length, 0.0, 0], [0, 0, 0, 1])
+        # row 1
+        self.move_base.relative_pose([0.0, 0.1, 0], [0, 0, 0, 1])
+        self.move_arm.shelf1_row1_pose()
+        self.move_arm.relative_goal([to_close_to_wall_fix, 0.1, 0], [0, 0, 0, 1])
+        self.move_base.goto_shelf4()
 
-    # row 1
-    move_base.relative_pose([0.0, 0.1, 0], [0, 0, 0, 1])
-    move_arm.shelf1_row1_pose()
-    move_arm.relative_goal([to_close_to_wall_fix, 0.1, 0], [0, 0, 0, 1])
-    move_base.goto_shelf4()
+        # row 2
+        self.move_arm.relative_goal([0., -0.25, 0], [0, 0, 0, 1])
+        self.move_base.relative_pose([-short_shelf_length, 0.0, 0], [0, 0, 0, 1])
 
-    # row 2
-    move_arm.relative_goal([0., -0.25, 0], [0, 0, 0, 1])
-    move_base.relative_pose([-short_shelf_length, 0.0, 0], [0, 0, 0, 1])
+        # row 3
+        self.move_arm.relative_goal([0., -0.25, 0], [0, 0, 0, 1])
+        self.move_base.goto_shelf4()
 
-    # row 3
-    move_arm.relative_goal([0., -0.25, 0], [0, 0, 0, 1])
-    move_base.goto_shelf4()
+        # row 4
+        self.move_arm.relative_goal([0., -0.25, 0], [0, 0, 0, 1])
+        self.move_base.relative_pose([-short_shelf_length, 0.0, 0], [0, 0, 0, 1])
 
-    # row 4
-    move_arm.relative_goal([0., -0.25, 0], [0, 0, 0, 1])
-    move_base.relative_pose([-short_shelf_length, 0.0, 0], [0, 0, 0, 1])
+        # row 5
+        self.move_arm.relative_goal([0., -0.2, 0], [0, 0, 0, 1])
+        self.move_base.goto_shelf4()
 
-    # row 5
-    move_arm.relative_goal([0., -0.2, 0], [0, 0, 0, 1])
-    move_base.goto_shelf4()
+        # back to default
+        self.move_arm.drive_pose()
 
-    # back to default
-    move_arm.drive_pose()
+    def cancel_all_goals(self):
+        self.move_base.client.cancel_goal()
+        self.move_base.client.cancel_all_goals()
+        self.move_arm.client.cancel_goal()
+        self.move_arm.client.cancel_all_goals()
+
+    def count(self, barcode, separator_id):
+        global knowrob
+        msg = CountObjectsRequest()
+        msg.separator_location = convert_dictionary_to_ros_message('geometry_msgs/PoseStamped',
+                                                                   knowrob[barcode][separator_id]['separator_location'])
+        msg.separator_location.pose.position.y += self.magic_offset
+        msg.separator_location.pose.position.z += self.magic_offset + 0.05
+        msg.obj_depth = knowrob[barcode][0]['obj_depth']
+        msg.obj_width = knowrob[barcode][0]['obj_width']
+        msg.obj_height = knowrob[barcode][0]['obj_height']
+        msg.object_name = knowrob[barcode][0]['object_name']
+
+        next_item = knowrob['separators'].index(-msg.separator_location.pose.position.x) + 1
+        next_x = - knowrob['separators'][next_item]
+        counting_pose = PoseStamped()
+        counting_pose.header.frame_id = 'map'
+        counting_pose.pose.position = Point((msg.separator_location.pose.position.x + next_x) / 2 + 0.05,
+                                            self.move_base.dist_to_shelfs,
+                                            0.0)
+        counting_pose.pose.orientation = Quaternion(0.0, 0.0, 0.0, 1.0)
+        self.move_base(counting_pose)
+        print(msg)
+        resp = self.counting_service.call(msg)
+        rospy.loginfo('object with barcode "{}" counted {} times'.format(barcode, resp.object_count))
+        return resp.object_count
+
+    def counting(self):
+        self.move_arm.drive_pose()
+        self.move_base.goto_shelf1()
+        self.move_arm.start_pose_row4()
+        self.move_arm.counting_pose()
+
+        total_objects = 0
+
+        total_objects += self.count('500183', 0)
+        total_objects += self.count('046088', 0)
+        total_objects += self.count('046088', 1)
+        total_objects += self.count('262289', 0)
+        total_objects += self.count('010055', 0)
+        total_objects += self.count('015652', 0)
+        total_objects += self.count('516937', 0)
+        total_objects += self.count('125481', 0)
+        total_objects += self.count('125481', 1)
+        print("total number of ojbects {}".format(total_objects))
+        pass
 
 
 if __name__ == '__main__':
     rospy.init_node('brain')
-    move_base = MoveBase(True)
-    move_arm = MoveArm(True)
-    move_base.client.cancel_all_goals()
-    move_arm.client.cancel_all_goals()
+    cram = CRAM()
+    cram.cancel_all_goals()
     try:
-        scan_shelf1(move_arm, move_base)
-        scan_shelf2(move_arm, move_base)
-        scan_shelf3(move_arm, move_base)
-        scan_shelf4(move_arm, move_base)
+        cmd = raw_input('barcodes or counting? [b/c]')
+        if cmd == 'b':
+            print('starting barcode scanning')
+            cram.scan_shelf1()
+            cram.scan_shelf2()
+            cram.scan_shelf3()
+            cram.scan_shelf4()
+        elif cmd == 'c':
+            print('starting counting')
+            cram.counting()
     except Exception as e:
         print('{}: {}'.format(e.__class__, e.message))
     finally:
         print('canceling all goals')
-        move_base.client.cancel_goal()
-        move_base.client.cancel_all_goals()
-        move_arm.client.cancel_goal()
-        move_arm.client.cancel_all_goals()
+        cram.cancel_all_goals()
         rospy.sleep(1)

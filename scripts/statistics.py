@@ -11,6 +11,7 @@ from collections import defaultdict
 class Evaluation(object):
     def __init__(self):
         self.expected_fn = 23
+        self.image_id = 0
 
     def load_scanning_data(self):
         datas = {}
@@ -65,7 +66,8 @@ class Evaluation(object):
         self.show_histogram(diffs_y, max_, 'y')
         self.show_histogram(diffs_z, max_, 'z')
 
-    def show_histogram(self, x, max_, xlabel=''):
+    def show_histogram(self, x, max_, xlabel='', save=True):
+
         n, bins, patches = plt.hist(x, 50, range=[0, max_], facecolor='green', alpha=0.75)
 
         plt.xlabel(xlabel)
@@ -77,7 +79,12 @@ class Evaluation(object):
         plt.grid(True)
         # print('avg diff: {}'.format(np.mean(x)))
 
-        plt.show()
+        if save:
+            plt.savefig('../tex/{}_{}.pdf'.format(self.image_id, xlabel.replace(' ', '_')))
+            self.image_id += 1
+            plt.close()
+        else:
+            plt.show()
 
     def precision(self, tp, fp):
         return tp / (tp + fp)
@@ -99,30 +106,45 @@ class Evaluation(object):
         self.show_histogram(fp_counts, 50, 'number of times a fp has been seen')
 
     def analyse(self):
-        ground_truth = self.load_ground_truth()
-        scanning_datas = self.load_scanning_data()
-        tp_barcodes = defaultdict(list)
-        tp = {}
-        fp = {}
-        fn = {}
-        for i, scanning_data in scanning_datas.items():
-            for scanned_code in scanning_data:
-                if scanned_code in ground_truth.keys() and scanned_code not in tp_barcodes[i]:
-                    tp_barcodes[i].append(scanned_code)
-            tp[i] = len(tp_barcodes[i])
-            fp[i] = len(scanning_data) - len(tp_barcodes[i])
-            fn[i] = len(ground_truth) - len(tp_barcodes[i]) - self.expected_fn
-        avg_tp = sum(tp.values()) / len(tp)
-        avg_fp = sum(fp.values()) / len(fp)
-        avg_fn = sum(fn.values()) / len(fn)
-        print('tp: {}'.format(avg_tp))
-        print('fp: {}'.format(avg_fp))
-        print('fn: {}'.format(avg_fn))
-        print('precision: {}'.format(self.precision(avg_tp, avg_fp)))
-        print('recall: {}'.format(self.recall(avg_tp, avg_fn)))
-        self.tp_distance(ground_truth, scanning_datas, tp_barcodes)
-        self.count_barcodes(scanning_datas, tp_barcodes)
-        pass
+        with open('../tex/template.tex', 'r') as template_tex:
+            with open('../tex/report.tex', 'w') as f:
+                for line in template_tex.readlines():
+                    if line.startswith('%insert here'):
+                        ground_truth = self.load_ground_truth()
+                        scanning_datas = self.load_scanning_data()
+                        tp_barcodes = defaultdict(list)
+                        tp = {}
+                        fp = {}
+                        fn = {}
+                        for i, scanning_data in scanning_datas.items():
+                            for scanned_code in scanning_data:
+                                if scanned_code in ground_truth.keys() and scanned_code not in tp_barcodes[i]:
+                                    tp_barcodes[i].append(scanned_code)
+                            tp[i] = len(tp_barcodes[i])
+                            fp[i] = len(scanning_data) - len(tp_barcodes[i])
+                            fn[i] = len(ground_truth) - len(tp_barcodes[i]) - self.expected_fn
+                        avg_tp = sum(tp.values()) / len(tp)
+                        avg_fp = sum(fp.values()) / len(fp)
+                        avg_fn = sum(fn.values()) / len(fn)
+                        self.tp_distance(ground_truth, scanning_datas, tp_barcodes)
+                        self.count_barcodes(scanning_datas, tp_barcodes)
+
+                        f.write('\\begin{tabularx}{\\textwidth}{c|c|c|c|c|c}\n')
+                        f.write('Experiment \\# & TP & FP & FN & Precision & Recall \\\\\\hline\n')
+                        for i, scanning_data in scanning_datas.items():
+                            f.write('{} & {} & {} & {} & {:.4} & {:.4} \\\\\n'.format(i, tp[i], fp[i], fn[i],
+                                                             self.precision(tp[i], fp[i]),
+                                                             self.recall(tp[i], fn[i])))
+                        f.write('\\hline\n')
+                        f.write('avg & {} & {} & {} & {:.4} & {:.4} \\\\\n'.format(avg_tp, avg_fp, avg_fn,
+                                                         self.precision(avg_tp, avg_fp),
+                                                         self.recall(avg_tp, avg_fn)))
+                        f.write('\\end{tabularx}\n')
+                        for pdf in sorted(glob('../tex/*.pdf')):
+                            if 'report' not in pdf:
+                                f.write('\\includegraphics[height=0.45\\textheight]{{{}}}\n\n'.format(pdf.split('/')[-1]))
+                    else:
+                        f.write(line)
 
 
 if __name__ == '__main__':
