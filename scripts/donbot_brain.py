@@ -245,6 +245,15 @@ class MoveArm(object):
 
 SHELF_LENGTH = 1.0
 
+def scan_shelf(move_arm, move_base, shelf_position, shelf_heights):
+    move_arm.drive_pose()
+    move_base(shelf_position)
+    move_arm.start_pose_row4()
+
+    for shelf_height in shelf_heights:
+        pass
+
+
 
 def scan_shelf1(move_arm, move_base):
     move_arm.drive_pose()
