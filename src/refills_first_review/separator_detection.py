@@ -81,11 +81,8 @@ if __name__ == '__main__':
     rospy.init_node('separator_detection_test')
     s = SeparatorClustering()
     s.start_listening('test', '123')
-    try:
-        print('separator detection test started')
-        rospy.spin()
-    except Exception:
-        pass
-    finally:
-        print('separator detection test ended')
-        print(s.stop_listening())
+    print('separator detection test started')
+    cmd = raw_input('stop? [enter]')
+    print('separator detection test ended')
+    print(s.stop_listening())
+    rospy.sleep(.5)
