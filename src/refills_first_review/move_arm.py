@@ -111,16 +111,16 @@ class GiskardWrapper(object):
         result = self.client.wait_for_result(rospy.Duration(self.move_time_limit))
         # print('finished in 10s?: {}'.format(result))
 
-    def start_pose_row4(self):
+    def floor_detection_pose(self):
         joint_state = JointState()
         joint_state.name = self.joint_names
         joint_state.position = [
-            -1.53236753145,
-            -1.5683611075,
-            0.721428394318,
-            -2.03346759478,
-            -1.60843974749,
-            1.58060956001,
+            -1.77669940148,
+            -2.07846769483,
+            1.79731767393,
+            -2.48730626502,
+            -1.37869861831,
+            1.49620376209,
         ]
         self.send_joint_goal(joint_state)
 

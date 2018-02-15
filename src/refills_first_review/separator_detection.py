@@ -76,3 +76,16 @@ class SeparatorClustering(object):
             m.color = self.separator_maker_color
             ma.markers.append(m)
         self.marker_pub.publish(ma)
+
+if __name__ == '__main__':
+    rospy.init_node('separator_detection_test')
+    s = SeparatorClustering()
+    s.start_listening('test', '123')
+    try:
+        print('separator detection test started')
+        rospy.spin()
+    except Exception:
+        pass
+    finally:
+        print('separator detection test ended')
+        print(s.stop_listening())

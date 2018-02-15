@@ -6,6 +6,7 @@ from actionlib_msgs.msg import GoalStatus
 from geometry_msgs.msg import PoseStamped, Point, Quaternion
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from std_msgs.msg import Header
+from tf.transformations import quaternion_about_axis
 
 
 class MoveBase(object):
@@ -21,7 +22,6 @@ class MoveBase(object):
         self.dist_to_shelfs = 1.4
 
     def move_absolute(self, target_pose):
-        # self.client.cancel_all_goals()
         if self.enabled:
             self.goal_pub.publish(target_pose)
             goal = MoveBaseGoal()
@@ -32,9 +32,17 @@ class MoveBase(object):
             state = self.client.get_state()
             if not wait_result or state != GoalStatus.SUCCEEDED:
                 print('movement did not finish in time')
+                self.STOP()
                 raise TimeoutError()
-            # rospy.loginfo('arrived at base goal {}'.format(result))
             return result
+
+    def move_absolute_xyz(self, frame_id, x, y, z):
+        target_pose = PoseStamped()
+        target_pose.header.frame_id = frame_id
+        target_pose.pose.position.x = x
+        target_pose.pose.position.y = y
+        target_pose.pose.orientation = Quaternion(*quaternion_about_axis(z, [0,0,1]))
+        return self.move_absolute(target_pose)
 
     def move_relative(self, position=(0,0,0), orientation=(0,0,0,1)):
         shelf = PoseStamped()
@@ -45,42 +53,6 @@ class MoveBase(object):
         shelf.pose.orientation = Quaternion(*orientation)
         self.move_absolute(shelf)
 
-    # def goto_shelf1(self):
-    #     # self.client.cancel_all_goals()
-    #     shelf = PoseStamped()
-    #     header = Header()
-    #     header.frame_id = 'map'
-    #     shelf.header = header
-    #     shelf.pose.position = Point(-0.0, self.dist_to_shelfs, 0.0)
-    #     shelf.pose.orientation = Quaternion(0.0, 0.0, 0.0, 1.0)
-    #     self.move_absolute(shelf)
-    #
-    # def goto_shelf2(self):
-    #     shelf = PoseStamped()
-    #     header = Header()
-    #     header.frame_id = 'map'
-    #     shelf.header = header
-    #     shelf.pose.position = Point(-1.0, self.dist_to_shelfs, 0.0)
-    #     shelf.pose.orientation = Quaternion(0.0, 0.0, 0.0, 1.0)
-    #     self.move_absolute(shelf)
-    #
-    # def goto_shelf3(self):
-    #     shelf = PoseStamped()
-    #     header = Header()
-    #     header.frame_id = 'map'
-    #     shelf.header = header
-    #     shelf.pose.position = Point(-2.0, self.dist_to_shelfs, 0.000)
-    #     shelf.pose.orientation = Quaternion(0.0, 0.0, 0.0, 1.0)
-    #     # shelf.pose.orientation = Quaternion(*quaternion_from_euler(0,0,pi*.98))
-    #     self.move_absolute(shelf)
-    #
-    # def goto_shelf4(self):
-    #     shelf = PoseStamped()
-    #     header = Header()
-    #     header.frame_id = 'map'
-    #     shelf.header = header
-    #     shelf.pose.position = Point(-2.9, self.dist_to_shelfs, 0.000)
-    #     shelf.pose.orientation = Quaternion(0.0, 0.0, 0.0, 1.0)
-    #     # shelf.pose.orientation = Quaternion(*quaternion_from_euler(0,0,pi*.99))
-    #     self.move_absolute(shelf)
-
+    def STOP(self):
+        self.client.cancel_goal()
+        self.move_relative()
