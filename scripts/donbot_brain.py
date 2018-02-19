@@ -28,12 +28,12 @@ FLOOR_DETECTION_OFFSET = {'x': 1.3,
 # arm
 COUNTING_OFFSET = {'trans': [0.0, -0.1, -0.1],
                    'rot': [0, 0.7071, -0.7071, 0]}
-FLOOR_SCAN_POSE_BOTTOM = {'trans': [-.15, -.7, 0.2],
+FLOOR_SCAN_POSE_BOTTOM = {'trans': [-.15, -.666, 0.316],
                           'rot': [0, 0.8398, -0.5428, 0]}
-FLOOR_SCAN_POSE_REST = {'trans': [-.15, -.7, 0.1],
+FLOOR_SCAN_POSE_REST = {'trans': [-.15, -.7, 0.0],
                         'rot': [0, 0.7071, -0.7071, 0]}
 SHELF_FUSSLEISTE = PoseStamped(Header(0, rospy.Time(), 'base_footprint'),
-                               Pose(Point(-0.100, -0.657, 0.137),
+                               Pose(Point(-0.100, -0.68, 0.223),
                                     Quaternion(-0.000, 0.797, -0.605, 0.000)))
 
 
@@ -75,7 +75,8 @@ class CRAM(object):
         cmd = raw_input('done? [y]')
         if cmd == 'y':
             rospy.loginfo('moving arm to fussleisten scanning pose')
-            self.move_arm.floor_detection_pose()
+            # self.move_arm.floor_detection_pose()
+            self.move_arm.pre_floor0_pose()
             self.move_arm.set_and_send_cartesian_goal(SHELF_FUSSLEISTE)
         else:
             raise UserWarning('you dumb')
@@ -132,15 +133,23 @@ class CRAM(object):
         return True
 
     def set_floor_scan_pose(self, shelf_id, floor_id):
-        offset = FLOOR_SCAN_POSE_BOTTOM if floor_id == 0 else FLOOR_SCAN_POSE_REST
+        if floor_id == 0:
+            self.move_arm.set_orientation_goal(QuaternionStamped(Header(0, rospy.Time(), self.move_arm.root),
+                                                                 Quaternion(*FLOOR_SCAN_POSE_BOTTOM['rot'])))
+            self.move_arm.set_translation_goal(
+                PointStamped(Header(0, rospy.Time(), self.move_arm.root),
+                             Point(FLOOR_SCAN_POSE_BOTTOM['trans'][0],
+                                   FLOOR_SCAN_POSE_BOTTOM['trans'][1],
+                                   FLOOR_SCAN_POSE_BOTTOM['trans'][2])))
+        else:
 
-        self.move_arm.set_orientation_goal(QuaternionStamped(Header(0, rospy.Time(), self.move_arm.root),
-                                                             Quaternion(*offset['rot'])))
-        self.move_arm.set_translation_goal(
-            PointStamped(Header(0, rospy.Time(), self.move_arm.root),
-                         Point(offset['trans'][0],
-                               offset['trans'][1],
-                               offset['trans'][2] + self.knowrob.get_floor_height(shelf_id, floor_id))))
+            self.move_arm.set_orientation_goal(QuaternionStamped(Header(0, rospy.Time(), self.move_arm.root),
+                                                                 Quaternion(*FLOOR_SCAN_POSE_REST['rot'])))
+            self.move_arm.set_translation_goal(
+                PointStamped(Header(0, rospy.Time(), self.move_arm.root),
+                             Point(FLOOR_SCAN_POSE_REST['trans'][0],
+                                   FLOOR_SCAN_POSE_REST['trans'][1],
+                                   FLOOR_SCAN_POSE_REST['trans'][2] + self.knowrob.get_floor_height(shelf_id, floor_id))))
 
     def scan_shelf(self, shelf_id):
         number_of_floors = self.detect_shelf_floors(shelf_id)

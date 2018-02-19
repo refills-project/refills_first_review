@@ -134,3 +134,16 @@ class GiskardWrapper(object):
                                 -1.57574254671,
                                 1.5231782198, ]
         self.send_joint_goal(joint_state)
+
+    def pre_floor0_pose(self):
+        joint_state = JointState()
+        joint_state.name = self.joint_names
+        joint_state.position = [
+            -1.56896144549,
+            -1.2928908507,
+            1.59626483917,
+            -2.61700326601,
+            -1.54511577288,
+            1.54054629803,
+        ]
+        self.send_joint_goal(joint_state)
