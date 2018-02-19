@@ -24,3 +24,6 @@ class KnowRob(object):
 
     def get_floor_height(self, shelf_id, floor_id):
         return self.floors[shelf_id][floor_id]
+
+    def is_floor_too_high(self, shelf_id, floor_id):
+        return self.get_floor_height(shelf_id, floor_id) > 1.2

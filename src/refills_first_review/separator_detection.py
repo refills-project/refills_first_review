@@ -72,7 +72,7 @@ class SeparatorClustering(object):
             m.type = Marker.CUBE
             m.action = Marker.ADD
             m.pose = separator.pose
-            m.scale = Vector3(.01,.01,.01)
+            m.scale = Vector3(.03,.03,.03)
             m.color = self.separator_maker_color
             ma.markers.append(m)
         self.marker_pub.publish(ma)
