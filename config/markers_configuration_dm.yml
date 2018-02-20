@@ -1,0 +1,45 @@
+%YAML:1.0
+# This file describes how markers are placed on objects.
+#
+# This can also be used to provide marker aliases, or transform the computed
+# origin of a marker.
+
+# shelf0_begin:
+#    - tag: 20
+#      size: 50
+
+
+#shelf0_end:
+#    - tag: 21
+#      size: 50
+
+#shelf1_begin:
+#    - tag: 22
+#      size: 50
+
+
+#shelf1_end:
+#    - tag: 23
+#      size: 50
+
+#shelf2_begin:
+#    - tag: 24 
+#     size: 50
+
+
+#shelf2_end:
+#    - tag: 25
+#      size: 50
+
+#shelf3_begin:
+#    - tag: 26
+#      size: 50
+
+
+#shelf3_end:
+#    - tag: 27
+#      size: 50
+
+
+
+
