@@ -32,7 +32,7 @@ class MoveBase(object):
             state = self.client.get_state()
             if not wait_result or state != GoalStatus.SUCCEEDED:
                 print('movement did not finish in time')
-                self.STOP()
+                # self.STOP()
                 raise TimeoutError()
             return result
 
