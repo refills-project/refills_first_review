@@ -1,3 +1,4 @@
+from collections import deque
 from multiprocessing import TimeoutError
 
 import actionlib
@@ -5,18 +6,26 @@ import rospy
 from actionlib_msgs.msg import GoalStatus
 from geometry_msgs.msg import PoseStamped, Point, Quaternion
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
+from sensor_msgs.msg import LaserScan
 from std_msgs.msg import Header
 from tf.transformations import quaternion_about_axis
 
-
 class MoveBase(object):
     def __init__(self, move_base_action_name='nav_pcontroller/move_base', enabled=False):
+        # TODO use paramserver [low]
         self.enabled = enabled
         self.client = actionlib.SimpleActionClient(move_base_action_name, MoveBaseAction)
         rospy.loginfo('connecting to {} ...'.format(move_base_action_name))
         self.client.wait_for_server()
         rospy.loginfo('connected to {}'.format(move_base_action_name))
         self.goal_pub = rospy.Publisher('move_base_goal', PoseStamped, queue_size=10)
+
+        # self.laser_sub_front = rospy.Subscriber(rospy.get_param('~/laser/front', '/hokuyo_front/most_intense_throttle'),
+        #                                         self.laser_cb, queue_size=10)
+        # self.laser_sub_back = rospy.Subscriber(rospy.get_param('~/laser/back', '/hokuyo_back/most_intense_throttle'),
+        #                                        self.laser_cb, queue_size=10)
+        # self.min_dist_front = deque(maxlen=4)
+        # self.min_dist_back = deque(maxlen=4)
         rospy.sleep(0.5)
         self.timeout = 30
         self.dist_to_shelfs = 1.4
@@ -56,3 +65,16 @@ class MoveBase(object):
     def STOP(self):
         self.client.cancel_goal()
         self.move_relative()
+
+    def laser_cb(self, data):
+        data = LaserScan()
+        for i in data.ranges:
+            angle = data.angle_increment * i
+
+    def get_c(self):
+        pass
+
+    def is_stuff_close(self, threshold=3):
+        #TODO implement, maybe move somewhere else [low]
+        rospy.logwarn('closest point not implemented')
+        return False

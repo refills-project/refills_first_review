@@ -135,7 +135,7 @@ class GiskardWrapper(object):
                                 1.5231782198, ]
         self.send_joint_goal(joint_state)
 
-    def pre_floor0_pose(self):
+    def pre_baseboard_pose(self):
         joint_state = JointState()
         joint_state.name = self.joint_names
         joint_state.position = [

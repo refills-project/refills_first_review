@@ -9,6 +9,7 @@ from copy import deepcopy
 
 from collections import defaultdict
 from geometry_msgs.msg import Point, Vector3, PoseStamped, Quaternion, Pose
+from rospy import ROSException
 from std_msgs.msg import ColorRGBA, Header
 from tf.transformations import quaternion_from_matrix
 from tf2_msgs.msg import TFMessage
@@ -17,6 +18,9 @@ from visualization_msgs.msg import Marker, MarkerArray
 from refills_first_review.tfwrapper import TfWrapper
 
 MAP = 'map'
+
+
+# TODO use compressed topic [medium]
 
 class Shelf(object):
     def __init__(self, number, map_position):
@@ -95,14 +99,21 @@ class Shelf(object):
 
 class BaseboardDetector(object):
     def __init__(self):
+        # TODO use paramserver [low]
         self.shelf_width = 1
 
         self.tf = TfWrapper()
         self.marker_pub = rospy.Publisher('visualization_marker_array', MarkerArray, queue_size=10)
-        self.marker_ns = 'fussleisten_marker'
+        self.marker_ns = 'baseboard_marker'
 
         self.shelves = []
         self.baseboard_detector_topic = '/ros_markers/tf'
+        try:
+            rospy.wait_for_message('/refills_wrist_camera/image_color', rospy.AnyMsg, timeout=1)
+        except ROSException as e:
+            rospy.loginfo('camera offline; \'detecting\' shelves anyway')
+            self.detect_fake_shelves()
+
         self.left_color = ColorRGBA(1, 1, 0, 1)
         self.right_color = ColorRGBA(1, .5, 0, 1)
 
@@ -113,6 +124,20 @@ class BaseboardDetector(object):
         self.detector_sub.unregister()
         self.publish_as_marker()
         return OrderedDict([x.get_shelf() for x in self.shelves if x.is_complete()])
+
+    def detect_fake_shelves(self):
+        s1 = Shelf(20, [-0.05, 0.515, 0])
+        s1.add_measurement(21, [-0.95, 0.515, 0])
+        self.shelves.append(s1)
+        s2 = Shelf(22, [-1.05, 0.515, 0])
+        s2.add_measurement(23, [-1.95, 0.515, 0])
+        self.shelves.append(s2)
+        s3 = Shelf(24, [-2.05, 0.515, 0])
+        s3.add_measurement(25, [-2.95, 0.515, 0])
+        self.shelves.append(s3)
+        s4 = Shelf(26, [-3.05, 0.515, 0])
+        s4.add_measurement(27, [-3.95, 0.515, 0])
+        self.shelves.append(s4)
 
     def cb(self, data):
         for msg in data.transforms:
@@ -128,9 +153,8 @@ class BaseboardDetector(object):
             for shelf in self.shelves:
                 if shelf.add_measurement(number, position):
                     break
-            else: # if not break
+            else:  # if not break
                 self.shelves.append(Shelf(number, position))
-
 
     def publish_as_marker(self):
         ma = MarkerArray()
