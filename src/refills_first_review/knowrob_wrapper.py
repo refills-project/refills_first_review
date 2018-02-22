@@ -1,4 +1,6 @@
+import json
 import rospy
+
 
 
 class KnowRob(object):
@@ -9,6 +11,10 @@ class KnowRob(object):
         self.floors = {}
         self.shelves = {}
         rospy.logwarn('knowrob not fully integrated')
+
+    def load_barcode_to_mesh_map(self):
+        self.barcode_to_mesh = json.load(open('../../data/barcode_to_mesh.json'))
+
 
     # shelves
     def add_shelves(self, shelves):
@@ -46,6 +52,15 @@ class KnowRob(object):
         # TODO
         return self.get_floor_height(shelf_id, floor_id) > 1.2
 
+    def is_bottom_floor(self, shelf_id, floor_id):
+        return floor_id == 0
+
+    def is_hanging_foor(self, shelf_id, floor_id):
+        return shelf_id == 'shelf1' and floor_id in [3,4,5]
+
+    def is_normal_floor(self, shelf_id, floor_id):
+        return not self.is_bottom_floor(shelf_id, floor_id) and not self.is_hanging_foor(shelf_id, floor_id)
+
     def add_separators(self, separators):
         # TODO
         return True
@@ -57,3 +72,6 @@ class KnowRob(object):
     def get_facings(self, shelf_id, floor_id):
         # TODO
         return [.2, .4, .6, .8]
+
+    def get_object_mesh(self, barcode):
+        pass

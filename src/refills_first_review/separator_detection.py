@@ -15,15 +15,18 @@ from refills_first_review.tfwrapper import TfWrapper
 
 class SeparatorClustering(object):
     def __init__(self):
-        # TODO handle hanging floors [medium]
         # TODO use paramserver [low]
         self.tf = TfWrapper()
         self.marker_pub = rospy.Publisher('visualization_marker_array', MarkerArray, queue_size=10)
         self.detections = []
         self.map_frame_id = 'map'
         self.separator_detector_topic = '/separator_marker_detector_node/data_out'
-        self.separator_maker_color = ColorRGBA(0, 0, 1, 1)
-        self.separator_maker_scale = Vector3(.03, .03, .03)
+        self.separator_maker_color = ColorRGBA(.8, .8, .8, .8)
+        # TODO change marker shape [low]
+        # TODO return correct number of separators in fake mode [low]
+        self.separator_maker_scale = Vector3(.01, .5, .05)
+        self.min_samples = 2
+        self.max_dist = 0.01
 
     def start_listening(self, shelf_id, floor_id):
         self.detections = []
@@ -44,7 +47,7 @@ class SeparatorClustering(object):
 
     def separator_cb(self, separator_array):
         for separator in separator_array.separators:
-            map_pose = self.tf.transformPose(self.map_frame_id, separator.separator_pose)
+            map_pose = self.tf.transform_pose(self.map_frame_id, separator.separator_pose)
             if map_pose is not None:
                 position = [map_pose.pose.position.x,
                             map_pose.pose.position.y,
@@ -57,7 +60,7 @@ class SeparatorClustering(object):
         if len(data) == 0:
             rospy.logwarn('no separators detected')
         else:
-            clusters = DBSCAN(eps=0.01, min_samples=3).fit(data)
+            clusters = DBSCAN(eps=self.max_dist, min_samples=self.min_samples).fit(data)
             labels = np.unique(clusters.labels_)
             rospy.loginfo('detected {} separators'.format(len(labels)))
             for i, label in enumerate(labels):
@@ -83,6 +86,7 @@ class SeparatorClustering(object):
             m.type = Marker.CUBE
             m.action = Marker.ADD
             m.pose = separator.pose
+            m.pose.position.y -= self.separator_maker_scale.y / 2
             m.scale = self.separator_maker_scale
             m.color = self.separator_maker_color
             ma.markers.append(m)
@@ -94,11 +98,11 @@ class SeparatorClustering(object):
             for j in range(4):
                 p = PoseStamped()
                 p.header.frame_id = 'camera_link'
-                p.pose.position = Point(-i*1/(num_fake_separators-1),0,0.25)
-                p = self.tf.transformPose(self.map_frame_id, p)
+                p.pose.position = Point(-i * 1 / (num_fake_separators - 1), 0, 0.25)
+                p = self.tf.transform_pose(self.map_frame_id, p)
                 self.detections.append([p.pose.position.x,
                                         p.pose.position.y,
-                                        p.pose.position.z,])
+                                        p.pose.position.z, ])
 
 
 if __name__ == '__main__':

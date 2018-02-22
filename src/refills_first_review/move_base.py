@@ -10,6 +10,7 @@ from sensor_msgs.msg import LaserScan
 from std_msgs.msg import Header
 from tf.transformations import quaternion_about_axis
 
+
 class MoveBase(object):
     def __init__(self, move_base_action_name='nav_pcontroller/move_base', enabled=False):
         # TODO use paramserver [low]
@@ -50,10 +51,10 @@ class MoveBase(object):
         target_pose.header.frame_id = frame_id
         target_pose.pose.position.x = x
         target_pose.pose.position.y = y
-        target_pose.pose.orientation = Quaternion(*quaternion_about_axis(z, [0,0,1]))
+        target_pose.pose.orientation = Quaternion(*quaternion_about_axis(z, [0, 0, 1]))
         return self.move_absolute(target_pose)
 
-    def move_relative(self, position=(0,0,0), orientation=(0,0,0,1)):
+    def move_relative(self, position=(0, 0, 0), orientation=(0, 0, 0, 1)):
         shelf = PoseStamped()
         header = Header()
         header.frame_id = 'base_footprint'
@@ -67,14 +68,17 @@ class MoveBase(object):
         self.move_relative()
 
     def laser_cb(self, data):
+        min = rospy.get_param('/hokuyo_back/angle_min', -2.0)
+        max = rospy.get_param('/hokuyo_back/angle_max', 2.0)
         data = LaserScan()
-        for i in data.ranges:
-            angle = data.angle_increment * i
+        for i, dist in enumerate(data.ranges):
+            angle = min + i * data.angle_increment
+
 
     def get_c(self):
         pass
 
     def is_stuff_close(self, threshold=3):
-        #TODO implement, maybe move somewhere else [low]
+        # TODO implement, maybe move somewhere else [low]
         rospy.logwarn('closest point not implemented')
         return False

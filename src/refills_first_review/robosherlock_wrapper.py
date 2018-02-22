@@ -1,4 +1,6 @@
 from __future__ import print_function, division
+
+import json
 import numpy as np
 
 import rospy
@@ -19,6 +21,7 @@ class RoboSherlock(object):
     def __init__(self):
         # TODO use paramserver [low]
         # TODO implement all the things [high]
+
         self.separator_detection = SeparatorClustering()
         self.baseboard_detection = BaseboardDetector()
         self.barcode_detection = BarcodeDetector()
@@ -40,15 +43,15 @@ class RoboSherlock(object):
         # TODO
         return self.baseboard_detection.stop_listening()
 
-    def start_barcode_detection(self):
+    def start_barcode_detection(self, shelf_id, floor_id):
         # TODO
-        # self.barcode_detection.start_listening()
+        self.barcode_detection.start_listening(shelf_id, floor_id)
         pass
 
     def stop_barcode_detection(self):
         # TODO
-        # return self.barcode_detection.stop_listening()
-        return {}
+        return self.barcode_detection.stop_listening()
+        # return {}
 
     def detect_floors(self, shelf_id):
         # TODO

@@ -26,11 +26,17 @@ FLOOR_DETECTION_OFFSET = {'x': 1.3,
                           'y': 0.5,
                           'z': -np.pi / 2}
 # arm
+# trans in camera_link, rot in base_footprint
 COUNTING_OFFSET = {'trans': [0.0, -0.1, -0.1],
                    'rot': [0, 0.7071, -0.7071, 0]}
+# in base_footprint
 FLOOR_SCAN_POSE_BOTTOM = {'trans': [-.15, -.646, 0.177],
                           'rot': [0, 0.858, -0.514, 0]}
+# in base_footprint
 FLOOR_SCAN_POSE_REST = {'trans': [-.15, -.7, 0.0],
+                        'rot': [0, 0.7071, -0.7071, 0]}
+# in base_footprint
+FLOOR_SCAN_POSE_HANGING = {'trans': [-.15, -.82, 0.0],
                         'rot': [0, 0.7071, -0.7071, 0]}
 SHELF_BASEBOARD = PoseStamped(Header(0, rospy.Time(), 'base_footprint'),
                               Pose(Point(-0.137, -0.68, 0.223),
@@ -41,7 +47,6 @@ class CRAM(object):
     def __init__(self):
         # TODO use paramserver [low]
         # TODO publish own shelf frames? [low]
-        # TODO hang shelf special case [medium]
         # TODO live logging [high]
         # TODO SMS [high]
         self.knowrob = KnowRob()
@@ -65,9 +70,9 @@ class CRAM(object):
         rospy.loginfo('shelf baseboard detection requires manuel mode')
         rospy.loginfo('move to free space plx')
         cmd = raw_input('done? [y]')
-        if cmd == '1337':
+        if cmd.isdigit():
             rospy.logwarn('skipping baseboard detection')
-            self.robosherlock.baseboard_detection.detect_fake_shelves()
+            self.robosherlock.baseboard_detection.detect_fake_shelves(cmd)
             self.robosherlock.start_baseboard_detection()
         else:
             if cmd == 'y':
@@ -98,7 +103,8 @@ class CRAM(object):
         for shelf_floor_id in self.knowrob.get_floor_ids(shelf_id):
             if not self.knowrob.is_floor_too_high(shelf_id, shelf_floor_id):
                 self.scan_floor(shelf_id, shelf_floor_id)
-                self.count_floor(shelf_id, shelf_floor_id)
+                if not self.knowrob.is_hanging_foor(shelf_id, shelf_floor_id):
+                    self.count_floor(shelf_id, shelf_floor_id)
         self.move_arm.drive_pose()
 
     def detect_shelf_floors(self, shelf_id):
@@ -118,16 +124,26 @@ class CRAM(object):
         self.set_floor_scan_pose(shelf_id, floor_id)
         self.move_arm.send_cartesian_goal()
         self.move_in_front_of_shelf(shelf_id)
-        self.robosherlock.start_separator_detection(shelf_id, floor_id)
-        # self.robosherlock.start_barcode_detection()
+
+        if not self.knowrob.is_hanging_foor(shelf_id, floor_id):
+            self.robosherlock.start_separator_detection(shelf_id, floor_id)
+        self.robosherlock.start_barcode_detection(shelf_id, floor_id)
+
         self.move_base.move_relative([-self.knowrob.get_floor_width(), 0, 0])
-        separators = self.robosherlock.stop_separator_detection()
-        # barcodes = self.robosherlock.stop_barcode_detection()
-        self.knowrob.add_separators(separators)
-        # self.knowrob.add_barcodes(barcodes)
+
+        if not self.knowrob.is_hanging_foor(shelf_id, floor_id):
+            separators = self.robosherlock.stop_separator_detection()
+            self.knowrob.add_separators(separators)
+        barcodes = self.robosherlock.stop_barcode_detection()
+        self.knowrob.add_barcodes(barcodes)
 
     def set_floor_scan_pose(self, shelf_id, floor_id):
-        pose = FLOOR_SCAN_POSE_REST if floor_id != 0 else FLOOR_SCAN_POSE_BOTTOM
+        if self.knowrob.is_bottom_floor(shelf_id, floor_id):
+            pose = FLOOR_SCAN_POSE_BOTTOM
+        elif self.knowrob.is_hanging_foor(shelf_id, floor_id):
+            pose = FLOOR_SCAN_POSE_HANGING
+        else:
+            pose = FLOOR_SCAN_POSE_REST
         self.move_arm.set_orientation_goal(QuaternionStamped(Header(0, rospy.Time(), self.move_arm.root),
                                                              Quaternion(*pose['rot'])))
         self.move_arm.set_translation_goal(
@@ -173,16 +189,16 @@ if __name__ == '__main__':
     rospy.init_node('brain')
     cram = CRAM()
     # cram.STOP()
-    try:
-        cmd = raw_input('start demo? [y]')
-        if cmd == 'y':
-            rospy.loginfo('starting REFILLS scenario 1 demo')
-            cram.scan_shop()
-            rospy.loginfo('REFILLS scenario 1 demo completed')
-    except Exception as e:
-        # TODO does not work, fix it! [low]
-        rospy.loginfo(e)
-    finally:
-        rospy.loginfo('canceling all goals')
-        cram.STOP()
-        rospy.sleep(1)
+    # try:
+    cmd = raw_input('start demo? [y]')
+    if cmd == 'y':
+        rospy.loginfo('starting REFILLS scenario 1 demo')
+        cram.scan_shop()
+        rospy.loginfo('REFILLS scenario 1 demo completed')
+    # except Exception as e:
+    #     # TODO does not work, fix it! [low]
+    #     rospy.loginfo(e.__class__, e)
+    # finally:
+    #     rospy.loginfo('canceling all goals')
+    #     cram.STOP()
+    #     rospy.sleep(1)

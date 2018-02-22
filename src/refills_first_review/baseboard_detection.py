@@ -20,8 +20,6 @@ from refills_first_review.tfwrapper import TfWrapper
 MAP = 'map'
 
 
-# TODO use compressed topic [medium]
-
 class Shelf(object):
     def __init__(self, number, map_position):
         self.complete = False
@@ -108,11 +106,11 @@ class BaseboardDetector(object):
 
         self.shelves = []
         self.baseboard_detector_topic = '/ros_markers/tf'
-        try:
-            rospy.wait_for_message('/refills_wrist_camera/image_color', rospy.AnyMsg, timeout=1)
-        except ROSException as e:
-            rospy.loginfo('camera offline; \'detecting\' shelves anyway')
-            self.detect_fake_shelves()
+        # try:
+        #     rospy.wait_for_message('/refills_wrist_camera/image_color', rospy.AnyMsg, timeout=1)
+        # except ROSException as e:
+        #     rospy.loginfo('camera offline; \'detecting\' shelves anyway')
+        #     self.detect_fake_shelves()
 
         self.left_color = ColorRGBA(1, 1, 0, 1)
         self.right_color = ColorRGBA(1, .5, 0, 1)
@@ -125,19 +123,23 @@ class BaseboardDetector(object):
         self.publish_as_marker()
         return OrderedDict([x.get_shelf() for x in self.shelves if x.is_complete()])
 
-    def detect_fake_shelves(self):
-        s1 = Shelf(20, [-0.05, 0.515, 0])
-        s1.add_measurement(21, [-0.95, 0.515, 0])
-        self.shelves.append(s1)
-        s2 = Shelf(22, [-1.05, 0.515, 0])
-        s2.add_measurement(23, [-1.95, 0.515, 0])
-        self.shelves.append(s2)
-        s3 = Shelf(24, [-2.05, 0.515, 0])
-        s3.add_measurement(25, [-2.95, 0.515, 0])
-        self.shelves.append(s3)
-        s4 = Shelf(26, [-3.05, 0.515, 0])
-        s4.add_measurement(27, [-3.95, 0.515, 0])
-        self.shelves.append(s4)
+    def detect_fake_shelves(self, ids):
+        if '0' in ids:
+            s1 = Shelf(20, [-0.05, 0.515, 0])
+            s1.add_measurement(21, [-0.95, 0.515, 0])
+            self.shelves.append(s1)
+        if '1' in ids:
+            s2 = Shelf(22, [-1.05, 0.515, 0])
+            s2.add_measurement(23, [-1.95, 0.515, 0])
+            self.shelves.append(s2)
+        if '2' in ids:
+            s3 = Shelf(24, [-2.05, 0.515, 0])
+            s3.add_measurement(25, [-2.95, 0.515, 0])
+            self.shelves.append(s3)
+        if '3' in ids:
+            s4 = Shelf(26, [-3.05, 0.515, 0])
+            s4.add_measurement(27, [-3.95, 0.515, 0])
+            self.shelves.append(s4)
 
     def cb(self, data):
         for msg in data.transforms:
@@ -148,7 +150,7 @@ class BaseboardDetector(object):
                                        msg.transform.translation.y,
                                        msg.transform.translation.z)
             pose.pose.orientation.w = 1
-            pose = self.tf.transformPose(MAP, pose)
+            pose = self.tf.transform_pose(MAP, pose)
             position = [pose.pose.position.x, pose.pose.position.y, pose.pose.position.z]
             for shelf in self.shelves:
                 if shelf.add_measurement(number, position):
