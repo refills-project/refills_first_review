@@ -26,9 +26,12 @@ class SeparatorClustering(object):
         # TODO return correct number of separators in fake mode [low]
         self.separator_maker_scale = Vector3(.01, .5, .05)
         self.min_samples = 2
-        self.max_dist = 0.01
+        self.max_dist = 0.02
 
     def start_listening(self, shelf_id, floor_id):
+        #TODO zick zack hack
+        self.current_floor_id = floor_id
+
         self.detections = []
         self.separator_sub = rospy.Subscriber(self.separator_detector_topic, SeparatorArray, self.separator_cb,
                                               queue_size=10)
@@ -98,7 +101,11 @@ class SeparatorClustering(object):
             for j in range(4):
                 p = PoseStamped()
                 p.header.frame_id = 'camera_link'
-                p.pose.position = Point(-i * 1 / (num_fake_separators - 1), 0, 0.25)
+                #TODO zick zack hack
+                if self.current_floor_id % 2 == 0:
+                    p.pose.position = Point(-i * 1 / (num_fake_separators - 1), 0, 0.25)
+                else:
+                    p.pose.position = Point(i * 1 / (num_fake_separators - 1), 0, 0.25)
                 p = self.tf.transform_pose(self.map_frame_id, p)
                 self.detections.append([p.pose.position.x,
                                         p.pose.position.y,
