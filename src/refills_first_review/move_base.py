@@ -1,4 +1,3 @@
-from collections import deque
 from multiprocessing import TimeoutError
 
 import actionlib

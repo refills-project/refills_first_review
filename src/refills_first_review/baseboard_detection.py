@@ -11,7 +11,7 @@ from collections import defaultdict
 from geometry_msgs.msg import Point, Vector3, PoseStamped, Quaternion, Pose
 from rospy import ROSException
 from std_msgs.msg import ColorRGBA, Header
-from tf.transformations import quaternion_from_matrix
+from tf.transformations import quaternion_from_matrix, quaternion_from_euler
 from tf2_msgs.msg import TFMessage
 from visualization_msgs.msg import Marker, MarkerArray
 
@@ -66,7 +66,7 @@ class Shelf(object):
         p.header.frame_id = MAP
         p.pose.position = Point(*self.calc_shelf_origin())
         p.pose.orientation = Quaternion(*self.get_orientation())
-        return 'shelf{}'.format(self.id), p
+        return self.get_name(), p
 
     def calc_shelf_origin(self):
         left = self.get_left()
@@ -82,7 +82,7 @@ class Shelf(object):
     def get_orientation(self):
         left = self.get_left()
         right = self.get_right()
-        y = right - left
+        y = left - right
         y = y / np.linalg.norm(y)
         z = [0, 0, 1]
         x = np.cross(y, z)
@@ -93,6 +93,9 @@ class Shelf(object):
             [z[0], z[1], z[2], 0],
             [0.0, 0.0, 0.0, 1.0],
         ])
+
+    def get_name(self):
+        return 'shelf{}'.format(self.id)
 
 
 class BaseboardDetector(object):
@@ -162,11 +165,26 @@ class BaseboardDetector(object):
         ma = MarkerArray()
         for i, shelf in enumerate(self.shelves):
             if shelf.is_complete():
+                # shelf
+                m = Marker()
+                m.header.frame_id = shelf.get_name()
+                m.ns = self.marker_ns
+                m.id = i
+                m.pose.orientation.w = 0
+                if shelf.id == 0:
+                    m.pose.position.x += 0.07
+                m.action = Marker.ADD
+                m.type = Marker.MESH_RESOURCE
+                m.mesh_resource = 'package://iai_shelves/meshes/Shelf_{}.dae'.format(shelf.id)
+                m.scale = Vector3(1, 1, 1)
+                m.color = ColorRGBA(0, 0, 0, 0)
+                m.mesh_use_embedded_materials = True
+                ma.markers.append(m)
                 # left
                 m = Marker()
                 m.header.frame_id = MAP
                 m.ns = self.marker_ns
-                m.id = i
+                m.id = i + 1000
                 m.type = Marker.CUBE
                 m.action = Marker.ADD
                 m.pose.position = Point(*shelf.get_left())
@@ -177,7 +195,7 @@ class BaseboardDetector(object):
                 ma.markers.append(m)
                 # right
                 m = deepcopy(m)
-                m.id += 900000
+                m.id += 10000
                 m.pose.position = Point(*shelf.get_right())
                 m.pose.position.z = 0.03
                 m.color = self.right_color

@@ -1,6 +1,7 @@
 import json
 import rospy
 
+from refills_first_review.tfwrapper import TfWrapper
 
 
 class KnowRob(object):
@@ -8,6 +9,7 @@ class KnowRob(object):
         # TODO setup knowrob connection [high]
         # TODO implement all the things [high]
         # TODO use paramserver [low]
+        self.tf = TfWrapper()
         self.floors = {}
         self.shelves = {}
         rospy.logwarn('knowrob not fully integrated')
@@ -20,6 +22,9 @@ class KnowRob(object):
     def add_shelves(self, shelves):
         # TODO
         self.shelves = shelves
+        for name, pose in self.shelves.items():
+            self.tf.add_frame_from_pose(name, pose)
+        self.tf.start_frame_broadcasting()
         return True
 
     def get_shelves(self):

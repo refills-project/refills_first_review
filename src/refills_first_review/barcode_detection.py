@@ -43,7 +43,11 @@ class BarcodeDetector(object):
 
 
     def load_barcode_to_mesh_map(self):
-        self.barcode_to_mesh = json.load(open('../data/barcode_to_mesh.json'))
+        try:
+            self.barcode_to_mesh = json.load(open('../data/barcode_to_mesh.json'))
+        except IOError:
+            self.barcode_to_mesh = json.load(open('../../data/barcode_to_mesh.json'))
+
         self.offline_i = 0
 
     def start_listening(self, shelf_id, floor_id):
@@ -71,7 +75,12 @@ class BarcodeDetector(object):
 
                 p = PoseStamped()
                 p.header.frame_id = 'camera_link'
-                p.pose.position = Point(-(i + .5) * 1 / (barcodes_len), 0.025, 0.25)
+                # TODO zick zack hack
+                if self.floor_id % 2 == 0:
+                    p.pose.position = Point(-(i + .5) * 1 / (barcodes_len), 0.025, 0.25)
+                else:
+                    p.pose.position = Point((i + .5) * 1 / (barcodes_len), 0.025, 0.25)
+
                 p = self.tf.transform_pose(MAP, p)
                 self.barcodes[barcode].append([p.pose.position.x,
                                                p.pose.position.y,
@@ -95,7 +104,10 @@ class BarcodeDetector(object):
             m.id = int(barcode)
             m.action = Marker.ADD
             m.pose.position = Point(*position)
-            mesh_path = self.barcode_to_mesh[self.shelf_id][str(self.floor_id)][str(barcode)]
+            try:
+                mesh_path = self.barcode_to_mesh[self.shelf_id][str(self.floor_id)][str(barcode)[1:-1]]
+            except KeyError as e:
+                mesh_path = ''
             if mesh_path == '':
                 m.type = Marker.CUBE
                 m.pose.orientation = Quaternion(0, 0, 0, 1)
@@ -130,9 +142,9 @@ class BarcodeDetector(object):
 if __name__ == '__main__':
     rospy.init_node('baseboard_detection_test')
     d = BarcodeDetector()
-    d.start_listening()
-    print('baseboard detection test started')
+    d.start_listening('shelf0',0)
+    print('barcode detection test started')
     cmd = raw_input('stop? [enter]')
-    print('baseboard detection test ended')
+    print('barcode detection test ended')
     print(d.stop_listening())
     rospy.sleep(.5)

@@ -8,6 +8,7 @@ from time import time
 
 import rospy
 from geometry_msgs.msg import QuaternionStamped, Quaternion, PointStamped, Point, PoseStamped, Pose
+from multiprocessing import TimeoutError
 from std_msgs.msg import Header
 from tf.transformations import quaternion_about_axis
 
@@ -103,8 +104,9 @@ class CRAM(object):
         for shelf_floor_id in self.knowrob.get_floor_ids(shelf_id):
             if not self.knowrob.is_floor_too_high(shelf_id, shelf_floor_id):
                 self.scan_floor(shelf_id, shelf_floor_id)
-                if not self.knowrob.is_hanging_foor(shelf_id, shelf_floor_id):
-                    self.count_floor(shelf_id, shelf_floor_id)
+                # TODO uncomment if counting is implemented
+                # if not self.knowrob.is_hanging_foor(shelf_id, shelf_floor_id):
+                #     self.count_floor(shelf_id, shelf_floor_id)
         self.move_arm.drive_pose()
 
     def detect_shelf_floors(self, shelf_id):
@@ -123,13 +125,22 @@ class CRAM(object):
         rospy.loginfo('scanning floor {}/{}'.format(shelf_id, floor_id))
         self.set_floor_scan_pose(shelf_id, floor_id)
         self.move_arm.send_cartesian_goal()
-        self.move_in_front_of_shelf(shelf_id)
+        if floor_id % 2 == 0:
+            self.move_in_front_of_shelf(shelf_id)
 
         if not self.knowrob.is_hanging_foor(shelf_id, floor_id):
             self.robosherlock.start_separator_detection(shelf_id, floor_id)
         self.robosherlock.start_barcode_detection(shelf_id, floor_id)
 
-        self.move_base.move_relative([-self.knowrob.get_floor_width(), 0, 0])
+        try:
+            if floor_id % 2 == 0:
+                #TODO hack while counting not implemented
+                self.move_base.move_relative([-self.knowrob.get_floor_width(), 0, 0])
+            else:
+                self.move_in_front_of_shelf(shelf_id)
+        except TimeoutError as e:
+            self.move_base.STOP()
+
 
         if not self.knowrob.is_hanging_foor(shelf_id, floor_id):
             separators = self.robosherlock.stop_separator_detection()
@@ -189,16 +200,16 @@ if __name__ == '__main__':
     rospy.init_node('brain')
     cram = CRAM()
     # cram.STOP()
-    # try:
-    cmd = raw_input('start demo? [y]')
-    if cmd == 'y':
-        rospy.loginfo('starting REFILLS scenario 1 demo')
-        cram.scan_shop()
-        rospy.loginfo('REFILLS scenario 1 demo completed')
-    # except Exception as e:
-    #     # TODO does not work, fix it! [low]
-    #     rospy.loginfo(e.__class__, e)
-    # finally:
-    #     rospy.loginfo('canceling all goals')
-    #     cram.STOP()
-    #     rospy.sleep(1)
+    try:
+        cmd = raw_input('start demo? [y]')
+        if cmd == 'y':
+            rospy.loginfo('starting REFILLS scenario 1 demo')
+            cram.scan_shop()
+            rospy.loginfo('REFILLS scenario 1 demo completed')
+    except Exception as e:
+        # TODO does not work, fix it! [low]
+        rospy.loginfo(e.__class__, e)
+    finally:
+        rospy.loginfo('canceling all goals')
+        cram.STOP()
+        rospy.sleep(1)
