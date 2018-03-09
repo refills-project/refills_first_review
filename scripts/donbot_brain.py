@@ -2,6 +2,7 @@
 
 from __future__ import print_function, division
 
+import traceback
 from simplejson import OrderedDict
 import numpy as np
 from time import time
@@ -30,6 +31,7 @@ FLOOR_DETECTION_OFFSET = {'x': 1.3,
 # trans in camera_link, rot in base_footprint
 COUNTING_OFFSET = {'trans': [0.0, -0.1, -0.1],
                    'rot': [0, 0.7071, -0.7071, 0]}
+
 # in base_footprint
 FLOOR_SCAN_POSE_BOTTOM = {'trans': [-.15, -.646, 0.177],
                           'rot': [0, 0.858, -0.514, 0]}
@@ -122,6 +124,7 @@ class CRAM(object):
         self.move_arm.floor_detection_pose()
 
     def scan_floor(self, shelf_id, floor_id):
+        # TODO don't look straight onto the barcodes
         rospy.loginfo('scanning floor {}/{}'.format(shelf_id, floor_id))
         self.set_floor_scan_pose(shelf_id, floor_id)
         self.move_arm.send_cartesian_goal()
@@ -207,8 +210,7 @@ if __name__ == '__main__':
             cram.scan_shop()
             rospy.loginfo('REFILLS scenario 1 demo completed')
     except Exception as e:
-        # TODO does not work, fix it! [low]
-        rospy.loginfo(e.__class__, e)
+        traceback.print_exc()
     finally:
         rospy.loginfo('canceling all goals')
         cram.STOP()
