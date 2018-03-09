@@ -52,8 +52,9 @@ class CRAM(object):
         # TODO publish own shelf frames? [low]
         # TODO live logging [high]
         # TODO SMS [high]
+        self.counting_enabled = True
         self.knowrob = KnowRob()
-        self.robosherlock = RoboSherlock()
+        self.robosherlock = RoboSherlock(self.counting_enabled)
         self.move_base = MoveBase(enabled=True)
         self.move_arm = GiskardWrapper(enabled=True)
         self.map_frame_id = rospy.get_param('~/map', 'map')
@@ -106,9 +107,8 @@ class CRAM(object):
         for shelf_floor_id in self.knowrob.get_floor_ids(shelf_id):
             if not self.knowrob.is_floor_too_high(shelf_id, shelf_floor_id):
                 self.scan_floor(shelf_id, shelf_floor_id)
-                # TODO uncomment if counting is implemented
-                # if not self.knowrob.is_hanging_foor(shelf_id, shelf_floor_id):
-                #     self.count_floor(shelf_id, shelf_floor_id)
+                if self.counting_enabled and not self.knowrob.is_hanging_foor(shelf_id, shelf_floor_id):
+                    self.count_floor(shelf_id, shelf_floor_id)
         self.move_arm.drive_pose()
 
     def detect_shelf_floors(self, shelf_id):
@@ -128,7 +128,7 @@ class CRAM(object):
         rospy.loginfo('scanning floor {}/{}'.format(shelf_id, floor_id))
         self.set_floor_scan_pose(shelf_id, floor_id)
         self.move_arm.send_cartesian_goal()
-        if floor_id % 2 == 0:
+        if floor_id % 2 == 0 or self.counting_enabled:
             self.move_in_front_of_shelf(shelf_id)
 
         if not self.knowrob.is_hanging_foor(shelf_id, floor_id):
@@ -136,7 +136,7 @@ class CRAM(object):
         self.robosherlock.start_barcode_detection(shelf_id, floor_id)
 
         try:
-            if floor_id % 2 == 0:
+            if floor_id % 2 == 0 or self.counting_enabled:
                 #TODO hack while counting not implemented
                 self.move_base.move_relative([-self.knowrob.get_floor_width(), 0, 0])
             else:
@@ -147,7 +147,7 @@ class CRAM(object):
 
         if not self.knowrob.is_hanging_foor(shelf_id, floor_id):
             separators = self.robosherlock.stop_separator_detection()
-            self.knowrob.add_separators(separators)
+            self.knowrob.add_separators(shelf_id, floor_id, separators)
         barcodes = self.robosherlock.stop_barcode_detection()
         self.knowrob.add_barcodes(barcodes)
 
@@ -184,10 +184,13 @@ class CRAM(object):
         if len(facings) == 0:
             self.move_base.move_relative([self.knowrob.get_floor_width(), 0, 0])
         else:
-            for i, facing_x in enumerate(reversed(sorted(facings))):
+            # muh = 0
+            for i, facing_y in enumerate(reversed(sorted(facings))):
+                # self.move_base.move_relative([1+facing_x-muh, 0, 0])
+                # muh = 1+facing_x
                 self.move_base.move_absolute_xyz(self.knowrob.get_shelf_frame_id(shelf_id),
                                                  FLOOR_SCANNING_OFFSET['x'],
-                                                 FLOOR_SCANNING_OFFSET['y'] + facing_x,
+                                                 FLOOR_SCANNING_OFFSET['y'] + facing_y,
                                                  FLOOR_SCANNING_OFFSET['z'])
                 count = self.robosherlock.count()
                 # TODO get name of object in facing [medium]

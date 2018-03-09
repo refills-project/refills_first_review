@@ -23,7 +23,8 @@ MAP = 'map'
 
 
 class BarcodeDetector(object):
-    def __init__(self):
+    def __init__(self, counting_enabled):
+        self.counting_enabled = counting_enabled
         self.load_barcode_to_mesh_map()
         # TODO use paramserver [low]
         self.shelf_width = 1
@@ -72,11 +73,11 @@ class BarcodeDetector(object):
         if self.shelf_id in self.barcode_to_mesh:
             barcodes_len = len(self.barcode_to_mesh[self.shelf_id][str(self.floor_id)])
             for i, barcode in enumerate(self.barcode_to_mesh[self.shelf_id][str(self.floor_id)]):
-
+                barcode = '2{}3'.format(barcode)
                 p = PoseStamped()
                 p.header.frame_id = 'camera_link'
                 # TODO zick zack hack
-                if self.floor_id % 2 == 0:
+                if self.floor_id % 2 == 0 or self.counting_enabled:
                     p.pose.position = Point(-(i + .5) * 1 / (barcodes_len), 0.025, 0.25)
                 else:
                     p.pose.position = Point((i + .5) * 1 / (barcodes_len), 0.025, 0.25)

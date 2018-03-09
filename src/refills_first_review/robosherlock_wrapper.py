@@ -18,13 +18,14 @@ FLOORS = {
 
 
 class RoboSherlock(object):
-    def __init__(self):
+    def __init__(self, counting_enabled):
+        self.counting_enabled = counting_enabled
         # TODO use paramserver [low]
         # TODO implement all the things [high]
 
-        self.separator_detection = SeparatorClustering()
+        self.separator_detection = SeparatorClustering(self.counting_enabled)
         self.baseboard_detection = BaseboardDetector()
-        self.barcode_detection = BarcodeDetector()
+        self.barcode_detection = BarcodeDetector(self.counting_enabled)
         rospy.logwarn('robosherlock not fully integrated')
 
     def start_separator_detection(self, shelf_id, floor_id):

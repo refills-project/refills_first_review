@@ -14,7 +14,8 @@ from refills_first_review.tfwrapper import TfWrapper
 
 
 class SeparatorClustering(object):
-    def __init__(self):
+    def __init__(self, counting_hack_enabled):
+        self.counting_enabled = counting_hack_enabled
         # TODO use paramserver [low]
         self.tf = TfWrapper()
         self.marker_pub = rospy.Publisher('visualization_marker_array', MarkerArray, queue_size=10)
@@ -58,6 +59,7 @@ class SeparatorClustering(object):
                 self.detections.append(position)
 
     def cluster(self):
+        # TODO filter separators that don't belong to the shelf
         data = np.array(self.detections)
         separators = []
         if len(data) == 0:
@@ -102,7 +104,7 @@ class SeparatorClustering(object):
                 p = PoseStamped()
                 p.header.frame_id = 'camera_link'
                 #TODO zick zack hack
-                if self.current_floor_id % 2 == 0:
+                if self.current_floor_id % 2 == 0 or self.counting_enabled:
                     p.pose.position = Point(-i * 1 / (num_fake_separators - 1), 0, 0.25)
                 else:
                     p.pose.position = Point(i * 1 / (num_fake_separators - 1), 0, 0.25)
@@ -114,7 +116,7 @@ class SeparatorClustering(object):
 
 if __name__ == '__main__':
     rospy.init_node('separator_detection_test')
-    s = SeparatorClustering()
+    s = SeparatorClustering(True)
     s.start_listening('test', '123')
     print('separator detection test started')
     cmd = raw_input('stop? [enter]')

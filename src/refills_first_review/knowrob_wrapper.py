@@ -12,11 +12,11 @@ class KnowRob(object):
         self.tf = TfWrapper()
         self.floors = {}
         self.shelves = {}
+        self.separators = {}
         rospy.logwarn('knowrob not fully integrated')
 
     def load_barcode_to_mesh_map(self):
         self.barcode_to_mesh = json.load(open('../../data/barcode_to_mesh.json'))
-
 
     # shelves
     def add_shelves(self, shelves):
@@ -61,13 +61,13 @@ class KnowRob(object):
         return floor_id == 0
 
     def is_hanging_foor(self, shelf_id, floor_id):
-        return shelf_id == 'shelf1' and floor_id in [3,4,5]
+        return shelf_id == 'shelf1' and floor_id in [3, 4, 5]
 
     def is_normal_floor(self, shelf_id, floor_id):
         return not self.is_bottom_floor(shelf_id, floor_id) and not self.is_hanging_foor(shelf_id, floor_id)
 
-    def add_separators(self, separators):
-        # TODO
+    def add_separators(self, shelf_id, floor_id, separators):
+        self.separators[shelf_id, floor_id] = separators
         return True
 
     def add_barcodes(self, barcodes):
@@ -75,8 +75,16 @@ class KnowRob(object):
         pass
 
     def get_facings(self, shelf_id, floor_id):
-        # TODO
-        return [.2, .4, .6, .8]
+        separators = []
+        for separator in self.separators[shelf_id, floor_id]:
+            separator.header.stamp = rospy.Time()
+            separator_map = self.tf.transform_pose(self.get_shelf_frame_id(shelf_id), separator)
+            separators.append(separator_map.pose.position.y)
+        facings = []
+        separators = list(sorted(separators))
+        for i, facing in enumerate(sorted(separators)[:-1]):
+            facings.append((facing + separators[i+1])/2)
+        return facings
 
     def get_object_mesh(self, barcode):
         pass
