@@ -4,6 +4,7 @@ from sklearn.cluster import DBSCAN
 import rospy
 import numpy as np
 
+from copy import deepcopy
 from geometry_msgs.msg import Point, Vector3, PoseStamped
 from refills_msgs.msg import SeparatorArray
 from rospy import ROSException
@@ -17,7 +18,7 @@ class SeparatorClustering(object):
     def __init__(self, counting_hack_enabled):
         self.counting_enabled = counting_hack_enabled
         # TODO use paramserver [low]
-        self.tf = TfWrapper()
+        self.tf = TfWrapper(6)
         self.marker_pub = rospy.Publisher('visualization_marker_array', MarkerArray, queue_size=10)
         self.detections = []
         self.map_frame_id = 'map'
@@ -30,7 +31,7 @@ class SeparatorClustering(object):
         self.max_dist = 0.02
 
     def start_listening(self, shelf_id, floor_id):
-        #TODO zick zack hack
+        self.current_shelf_id = shelf_id
         self.current_floor_id = floor_id
 
         self.detections = []
@@ -72,10 +73,12 @@ class SeparatorClustering(object):
                 if label != -1:
                     separator = PoseStamped()
                     separator.header.frame_id = self.map_frame_id
-                    separator.header.stamp = rospy.get_rostime()
+                    # separator.header.stamp = rospy.get_rostime()
                     separator.pose.position = Point(*self.cluster_to_separator(data[clusters.labels_ == label]))
                     separator.pose.orientation.w = 1.0
-                    separators.append(separator)
+                    separator = self.tf.transform_pose(self.current_shelf_id, separator)
+                    if separator.pose.position.x < 1.04 and separator.pose.position.x > -0.04:
+                        separators.append(separator)
         return separators
 
     def cluster_to_separator(self, separator_cluster):
@@ -90,8 +93,8 @@ class SeparatorClustering(object):
             m.id = i
             m.type = Marker.CUBE
             m.action = Marker.ADD
-            m.pose = separator.pose
-            m.pose.position.y -= self.separator_maker_scale.y / 2
+            m.pose = deepcopy(separator.pose)
+            m.pose.position.y += self.separator_maker_scale.y / 2
             m.scale = self.separator_maker_scale
             m.color = self.separator_maker_color
             ma.markers.append(m)
@@ -117,9 +120,10 @@ class SeparatorClustering(object):
 if __name__ == '__main__':
     rospy.init_node('separator_detection_test')
     s = SeparatorClustering(True)
-    s.start_listening('test', '123')
+    s.start_listening('shelf_system_0', '0')
     print('separator detection test started')
     cmd = raw_input('stop? [enter]')
     print('separator detection test ended')
-    print(s.stop_listening())
+    separators = s.stop_listening()
+    print(separators)
     rospy.sleep(.5)

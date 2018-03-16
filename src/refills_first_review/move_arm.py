@@ -8,7 +8,7 @@ from std_msgs.msg import Header
 
 class GiskardWrapper(object):
     def __init__(self, giskard_action_name='/qp_controller/command', enabled=True):
-        self.move_time_limit = 20
+        self.move_time_limit = 25
         self.enabled = enabled
         self.client = SimpleActionClient(giskard_action_name, ControllerListAction)
         rospy.loginfo('connecting to {}'.format(giskard_action_name))
@@ -115,24 +115,40 @@ class GiskardWrapper(object):
         joint_state = JointState()
         joint_state.name = self.joint_names
         joint_state.position = [
-            -1.77669940148,
-            -2.07846769483,
-            1.79731767393,
-            -2.48730626502,
-            -1.37869861831,
-            1.49620376209,
+            -1.75002080599,
+            -2.07400399843,
+            1.79460525513,
+            -2.49168950716,
+            -1.40355569521,
+            1.50637328625,
+        ]
+        self.send_joint_goal(joint_state)
+
+    def floor_detection_pose2(self):
+        joint_state = JointState()
+        joint_state.name = self.joint_names
+        joint_state.position = [
+            -1.61822063128,
+            -1.36299354235,
+            2.39222145081,
+            -3.91022426287,
+            -1.52502566973,
+            1.5591506958,
         ]
         self.send_joint_goal(joint_state)
 
     def drive_pose(self):
         joint_state = JointState()
         joint_state.name = self.joint_names
-        joint_state.position = [-1.54014426867,
-                                -2.51763660112,
-                                1.38093948364,
-                                -2.05715114275,
-                                -1.57574254671,
-                                1.5231782198, ]
+        joint_state.position = [
+            -1.54838782946,
+            -2.51830751101,
+            1.37984895706,
+            -2.07125074068,
+            -1.59281522432,
+            1.56871032715,
+
+        ]
         self.send_joint_goal(joint_state)
 
     def pre_baseboard_pose(self):
@@ -147,3 +163,12 @@ class GiskardWrapper(object):
             1.54054629803,
         ]
         self.send_joint_goal(joint_state)
+
+
+if __name__ == '__main__':
+    rospy.init_node('separator_detection_test')
+    ma = GiskardWrapper()
+    # ma.floor_detection_pose2()
+    ma.set_orientation_goal(QuaternionStamped(Header(0, rospy.Time(), ma.root),
+                                              Quaternion(0., -0.70660617, 0.70760703, 0.)))
+    ma.send_cartesian_goal()

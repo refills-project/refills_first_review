@@ -1,5 +1,5 @@
 {
-    "shelf0":{
+    "shelf_system_0":{
         "0":{
             "027995": "Shelf1/DomestosKraftUniversalreiniger/SM_DomestosKraftUniversalreiniger_fixed.dae",
             "544205": "",
@@ -44,7 +44,7 @@
             "534910": "Shelf1/CalgonitFinishVorratspack/SM_CalgonitFinishVorratspack_fixed.dae"
         }
     },
-    "shelf1":{
+    "shelf_system_1":{
         "0":{
             "013462": "",
             "458823": "",
@@ -80,7 +80,7 @@
             "539355": ""
         }
     },
-    "shelf2":{
+    "shelf_system_2":{
         "0":{
             "260725": "Shelf3/BaleaLeichteBodylotionSanfteFeuchtigkeitspflege/SM_BaleaLeichteBodylotionSanfteFeuchtigkeitspflege_fixed.dae",
             "260707": "",
@@ -146,7 +146,7 @@
             "553715": "Shelf3/DoveVerwoehnendeBodyLotion2/SM_DoveVerwoehnendeBodyLotion2_fixed.dae"
         }
     },
-    "shelf3":{
+    "shelf_system_3":{
         "0":{
             "250917": "Shelf4/BaleaSanfteReinigungsmilch/SM_BaleaSanfteReinigungsmilch_fixed.dae",
             "251005": "",

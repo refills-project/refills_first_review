@@ -23,6 +23,7 @@ class KnowRob(object):
         # TODO
         self.shelves = shelves
         for name, pose in self.shelves.items():
+            # self.tf.broadcast_static_frame(name, pose)
             self.tf.add_frame_from_pose(name, pose)
         self.tf.start_frame_broadcasting()
         return True
@@ -49,13 +50,13 @@ class KnowRob(object):
         # TODO
         return 1.0
 
-    def get_floor_height(self, shelf_id, floor_id):
+    def get_floor_position(self, shelf_id, floor_id):
         # TODO
         return self.floors[shelf_id][floor_id]
 
     def is_floor_too_high(self, shelf_id, floor_id):
         # TODO
-        return self.get_floor_height(shelf_id, floor_id) > 1.2
+        return self.get_floor_position(shelf_id, floor_id)[-1] > 1.2
 
     def is_bottom_floor(self, shelf_id, floor_id):
         return floor_id == 0
@@ -79,7 +80,7 @@ class KnowRob(object):
         for separator in self.separators[shelf_id, floor_id]:
             separator.header.stamp = rospy.Time()
             separator_map = self.tf.transform_pose(self.get_shelf_frame_id(shelf_id), separator)
-            separators.append(separator_map.pose.position.y)
+            separators.append(separator_map.pose.position.x)
         facings = []
         separators = list(sorted(separators))
         for i, facing in enumerate(sorted(separators)[:-1]):

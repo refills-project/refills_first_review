@@ -29,7 +29,7 @@ class BarcodeDetector(object):
         # TODO use paramserver [low]
         self.shelf_width = 1
 
-        self.tf = TfWrapper()
+        self.tf = TfWrapper(4)
         self.marker_pub = rospy.Publisher('visualization_marker_array', MarkerArray, queue_size=10)
         self.marker_object_ns = 'barcode_object'
         self.marker_text_ns = 'barcode_text'
@@ -83,6 +83,7 @@ class BarcodeDetector(object):
                     p.pose.position = Point((i + .5) * 1 / (barcodes_len), 0.025, 0.25)
 
                 p = self.tf.transform_pose(MAP, p)
+                p = self.tf.transform_pose(self.shelf_id, p)
                 self.barcodes[barcode].append([p.pose.position.x,
                                                p.pose.position.y,
                                                p.pose.position.z, ])
@@ -92,15 +93,18 @@ class BarcodeDetector(object):
             self.barcodes[barcode] = np.mean(positions, axis=0)
 
     def cb(self, data):
-        p = self.tf.transform_pose(MAP, data.barcode_pose).pose.position
-        self.barcodes[data.barcode].append([p.x, p.y, p.z])
+        p = self.tf.transform_pose(MAP, data.barcode_pose)
+        if p is not None:
+            p.header.stamp = rospy.Time()
+            p = self.tf.transform_pose(self.shelf_id, p).pose.position
+            self.barcodes[data.barcode].append([p.x, p.y, p.z])
 
     def publish_as_marker(self):
         ma = MarkerArray()
         for i, (barcode, position) in enumerate(self.barcodes.items()):
             # object
             m = Marker()
-            m.header.frame_id = MAP
+            m.header.frame_id = self.shelf_id
             m.ns = self.marker_object_ns
             m.id = int(barcode)
             m.action = Marker.ADD
@@ -125,7 +129,7 @@ class BarcodeDetector(object):
 
             # text
             m = Marker()
-            m.header.frame_id = MAP
+            m.header.frame_id = self.shelf_id
             m.ns = self.marker_text_ns
             m.id = int(barcode)
             m.type = Marker.TEXT_VIEW_FACING
@@ -142,8 +146,8 @@ class BarcodeDetector(object):
 
 if __name__ == '__main__':
     rospy.init_node('baseboard_detection_test')
-    d = BarcodeDetector()
-    d.start_listening('shelf0',0)
+    d = BarcodeDetector(True)
+    d.start_listening('shelf_system_0',0)
     print('barcode detection test started')
     cmd = raw_input('stop? [enter]')
     print('barcode detection test ended')

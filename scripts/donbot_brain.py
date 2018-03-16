@@ -21,26 +21,31 @@ from refills_first_review.robosherlock_wrapper import RoboSherlock
 from refills_first_review.separator_detection import SeparatorClustering
 
 # base
-FLOOR_SCANNING_OFFSET = {'x': 0.95,
-                         'y': -0.15,
-                         'z': -np.pi / 2}
-FLOOR_DETECTION_OFFSET = {'x': 1.3,
-                          'y': 0.5,
-                          'z': -np.pi / 2}
+# shelf id
+FLOOR_SCANNING_OFFSET = {'x': -0.18,
+                         'y': -0.92,
+                         'z': np.pi}
+
+# shelf id
+FLOOR_DETECTION_OFFSET = {'x': 0.5,
+                          'y': -1.3,
+                          'z': np.pi}
 # arm
 # trans in camera_link, rot in base_footprint
 COUNTING_OFFSET = {'trans': [0.0, -0.1, -0.1],
-                   'rot': [0, 0.7071, -0.7071, 0]}
+                   'rot': [-0.000, 0.805, -0.593, -0.000]
+                   # 'rot': [0, 0.7071, -0.7071, 0]
+                   }
 
 # in base_footprint
 FLOOR_SCAN_POSE_BOTTOM = {'trans': [-.15, -.646, 0.177],
                           'rot': [0, 0.858, -0.514, 0]}
 # in base_footprint
-FLOOR_SCAN_POSE_REST = {'trans': [-.15, -.7, 0.0],
-                        'rot': [0, 0.7071, -0.7071, 0]}
+FLOOR_SCAN_POSE_REST = {'trans': [-.15, -.6, -0.0],
+                        'rot': [-0.111, -0.697, 0.699, 0.111]}
 # in base_footprint
 FLOOR_SCAN_POSE_HANGING = {'trans': [-.15, -.82, 0.0],
-                        'rot': [0, 0.7071, -0.7071, 0]}
+                           'rot': [0, 0.7071, -0.7071, 0]}
 SHELF_BASEBOARD = PoseStamped(Header(0, rospy.Time(), 'base_footprint'),
                               Pose(Point(-0.137, -0.68, 0.223),
                                    Quaternion(-0.000, 0.841, -0.541, 0.000)))
@@ -65,10 +70,10 @@ class CRAM(object):
         self.detect_baseboards()
         self.move_arm.drive_pose()
         for shelf_id in self.knowrob.get_shelves():
-            rospy.loginfo('scanning shelf \'{}\''.format(shelf_id))
+            rospy.loginfo('scanning shelf system \'{}\''.format(shelf_id))
             t = time()
             self.scan_shelf(shelf_id)
-            rospy.loginfo('scanned shelf \'{}\' in {:.2f}s'.format(shelf_id, time() - t))
+            rospy.loginfo('scanned shelf system \'{}\' in {:.2f}s'.format(shelf_id, time() - t))
 
     def detect_baseboards(self):
         rospy.loginfo('shelf baseboard detection requires manuel mode')
@@ -112,38 +117,42 @@ class CRAM(object):
         self.move_arm.drive_pose()
 
     def detect_shelf_floors(self, shelf_id):
-        self.go_into_floor_detection_pose(shelf_id)
-        floor_heights = self.robosherlock.detect_floors(shelf_id)
-        self.knowrob.add_shelf_floors(shelf_id, floor_heights)
-
-    def go_into_floor_detection_pose(self, shelf_id):
         self.move_base.move_absolute_xyz(self.knowrob.get_shelf_frame_id(shelf_id),
                                          FLOOR_DETECTION_OFFSET['x'],
                                          FLOOR_DETECTION_OFFSET['y'],
                                          FLOOR_DETECTION_OFFSET['z'])
+        self.robosherlock.start_floor_detection(shelf_id)
         self.move_arm.floor_detection_pose()
+        if self.robosherlock.robosherlock:
+            rospy.sleep(5)
+        self.move_arm.floor_detection_pose2()
+        if self.robosherlock.robosherlock:
+            rospy.sleep(5)
+        floor_heights = self.robosherlock.stop_floor_detection(shelf_id)
+        self.knowrob.add_shelf_floors(shelf_id, floor_heights)
 
     def scan_floor(self, shelf_id, floor_id):
         # TODO don't look straight onto the barcodes
         rospy.loginfo('scanning floor {}/{}'.format(shelf_id, floor_id))
+
         self.set_floor_scan_pose(shelf_id, floor_id)
         self.move_arm.send_cartesian_goal()
         if floor_id % 2 == 0 or self.counting_enabled:
             self.move_in_front_of_shelf(shelf_id)
 
         if not self.knowrob.is_hanging_foor(shelf_id, floor_id):
+            # TODO remove hardcoded shit
             self.robosherlock.start_separator_detection(shelf_id, floor_id)
         self.robosherlock.start_barcode_detection(shelf_id, floor_id)
 
         try:
             if floor_id % 2 == 0 or self.counting_enabled:
-                #TODO hack while counting not implemented
+                # TODO hack while counting not implemented
                 self.move_base.move_relative([-self.knowrob.get_floor_width(), 0, 0])
             else:
                 self.move_in_front_of_shelf(shelf_id)
         except TimeoutError as e:
             self.move_base.STOP()
-
 
         if not self.knowrob.is_hanging_foor(shelf_id, floor_id):
             separators = self.robosherlock.stop_separator_detection()
@@ -152,10 +161,11 @@ class CRAM(object):
         self.knowrob.add_barcodes(barcodes)
 
     def set_floor_scan_pose(self, shelf_id, floor_id):
+        floor_position = self.knowrob.get_floor_position(shelf_id, floor_id)
         if self.knowrob.is_bottom_floor(shelf_id, floor_id):
             pose = FLOOR_SCAN_POSE_BOTTOM
-        elif self.knowrob.is_hanging_foor(shelf_id, floor_id):
-            pose = FLOOR_SCAN_POSE_HANGING
+        # elif self.knowrob.is_hanging_foor(shelf_id, floor_id):
+        #     pose = FLOOR_SCAN_POSE_HANGING
         else:
             pose = FLOOR_SCAN_POSE_REST
         self.move_arm.set_orientation_goal(QuaternionStamped(Header(0, rospy.Time(), self.move_arm.root),
@@ -163,8 +173,8 @@ class CRAM(object):
         self.move_arm.set_translation_goal(
             PointStamped(Header(0, rospy.Time(), self.move_arm.root),
                          Point(pose['trans'][0],
-                               pose['trans'][1],
-                               pose['trans'][2] + self.knowrob.get_floor_height(shelf_id, floor_id))))
+                               pose['trans'][1] - floor_position[1],
+                               pose['trans'][2] + floor_position[-1])))
 
     def move_in_front_of_shelf(self, shelf_id):
         return self.move_base.move_absolute_xyz(self.knowrob.get_shelf_frame_id(shelf_id),
@@ -184,13 +194,10 @@ class CRAM(object):
         if len(facings) == 0:
             self.move_base.move_relative([self.knowrob.get_floor_width(), 0, 0])
         else:
-            # muh = 0
             for i, facing_y in enumerate(reversed(sorted(facings))):
-                # self.move_base.move_relative([1+facing_x-muh, 0, 0])
-                # muh = 1+facing_x
                 self.move_base.move_absolute_xyz(self.knowrob.get_shelf_frame_id(shelf_id),
-                                                 FLOOR_SCANNING_OFFSET['x'],
-                                                 FLOOR_SCANNING_OFFSET['y'] + facing_y,
+                                                 FLOOR_SCANNING_OFFSET['x'] + facing_y,
+                                                 FLOOR_SCANNING_OFFSET['y'],
                                                  FLOOR_SCANNING_OFFSET['z'])
                 count = self.robosherlock.count()
                 # TODO get name of object in facing [medium]
