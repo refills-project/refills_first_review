@@ -97,7 +97,8 @@ class BarcodeDetector(object):
         if p is not None:
             p.header.stamp = rospy.Time()
             p = self.tf.transform_pose(self.shelf_id, p).pose.position
-            self.barcodes[data.barcode].append([p.x, p.y, p.z])
+            if p.x > 0.0 and p.x < 1.0:
+                self.barcodes[data.barcode].append([p.x, p.y, p.z])
 
     def publish_as_marker(self):
         ma = MarkerArray()

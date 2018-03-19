@@ -124,10 +124,10 @@ class CRAM(object):
         self.robosherlock.start_floor_detection(shelf_id)
         self.move_arm.floor_detection_pose()
         if self.robosherlock.robosherlock:
-            rospy.sleep(5)
+            rospy.sleep(10)
         self.move_arm.floor_detection_pose2()
         if self.robosherlock.robosherlock:
-            rospy.sleep(5)
+            rospy.sleep(10)
         floor_heights = self.robosherlock.stop_floor_detection(shelf_id)
         self.knowrob.add_shelf_floors(shelf_id, floor_heights)
 
