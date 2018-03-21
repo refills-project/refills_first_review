@@ -74,15 +74,11 @@ class BarcodeDetector(object):
             barcodes_len = len(self.barcode_to_mesh[self.shelf_id][str(self.floor_id)])
             for i, barcode in enumerate(self.barcode_to_mesh[self.shelf_id][str(self.floor_id)]):
                 barcode = '2{}3'.format(barcode)
-                p = PoseStamped()
-                p.header.frame_id = 'camera_link'
-                # TODO zick zack hack
-                if self.floor_id % 2 == 0 or self.counting_enabled:
-                    p.pose.position = Point(-(i + .5) * 1 / (barcodes_len), 0.025, 0.25)
-                else:
-                    p.pose.position = Point((i + .5) * 1 / (barcodes_len), 0.025, 0.25)
+                p = self.tf.lookup_transform(self.shelf_id, 'camera_link')
+                p.pose.position.x = (i + .5) * 1 / (barcodes_len)
+                p.pose.position.y = 0
+                p.pose.orientation = Quaternion(0, 0, 0, 1)
 
-                p = self.tf.transform_pose(MAP, p)
                 p = self.tf.transform_pose(self.shelf_id, p)
                 self.barcodes[barcode].append([p.pose.position.x,
                                                p.pose.position.y,
@@ -148,7 +144,7 @@ class BarcodeDetector(object):
 if __name__ == '__main__':
     rospy.init_node('baseboard_detection_test')
     d = BarcodeDetector(True)
-    d.start_listening('shelf_system_0',0)
+    d.start_listening('shelf_system_1',2)
     print('barcode detection test started')
     cmd = raw_input('stop? [enter]')
     print('barcode detection test ended')

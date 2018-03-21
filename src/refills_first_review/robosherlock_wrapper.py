@@ -15,20 +15,21 @@ from refills_first_review.separator_detection import SeparatorClustering
 from refills_first_review.tfwrapper import TfWrapper
 
 FLOORS = {
-    'shelf_system_0': [[0, 0, 0.15], [0, 0.1, 0.55], [0, 0.1, 0.88], [0, 0.1, 1.17], [0, 0.1, 1.43]],
-    'shelf_system_1': [[0, 0, 0.15], [0, 0.1, 0.38], [0, 0.1, 0.59], [0, 0.2, 1.11], [0, 0.2, 1.42]],
-    'shelf_system_2': [[0, 0, 0.15], [0, 0.1, 0.47], [0, 0.1, 0.76], [0, 0.1, 1.06], [0, 0.1, 1.39]],
-    'shelf_system_3': [[0, 0, 0.15], [0, 0.1, 0.43], [0, 0.1, 0.68], [0, 0.1, 0.93], [0, 0.1, 1.18], [0, 0.1, 1.43]],
+    0: [[0, 0, 0.15], [0, 0.1, 0.55], [0, 0.1, 0.88], [0, 0.1, 1.17], [0, 0.1, 1.43]],
+    1: [[0, 0, 0.15], [0, 0.1, 0.38], [0, 0.1, 0.59], [0, 0.2, 1.11], [0, 0.2, 1.42]],
+    2: [[0, 0, 0.15], [0, 0.1, 0.47], [0, 0.1, 0.76], [0, 0.1, 1.06], [0, 0.1, 1.39]],
+    3: [[0, 0, 0.15], [0, 0.1, 0.43], [0, 0.1, 0.68], [0, 0.1, 0.93], [0, 0.1, 1.18], [0, 0.1, 1.43]],
 }
 
 
 class RoboSherlock(object):
-    def __init__(self, counting_enabled=True):
+    def __init__(self, knowrob, counting_enabled=True):
+        self.knowrob = knowrob
         self.counting_enabled = counting_enabled
         # TODO use paramserver [low]
         # TODO implement all the things [high]
 
-        self.separator_detection = SeparatorClustering(self.counting_enabled)
+        self.separator_detection = SeparatorClustering(self.counting_enabled, knowrob)
         self.baseboard_detection = BaseboardDetector()
         self.barcode_detection = BarcodeDetector(self.counting_enabled)
         try:
@@ -85,7 +86,7 @@ class RoboSherlock(object):
             req.query = json.dumps(q)
             self.robosherlock_service.call(req)
 
-    def stop_floor_detection(self, shelf_id):
+    def stop_floor_detection(self, shelf_id, unofficial_shelf_id=0):
         if self.robosherlock:
             req = RSQueryServiceRequest()
             q = {'scan':
@@ -106,9 +107,9 @@ class RoboSherlock(object):
             floors = [x for x in floors if x > 0.3]
             floors = [FLOORS[shelf_id][0]] + floors
             print('detected shelfs at heights: {}'.format(floors))
-            return floors
         else:
-            return FLOORS[shelf_id]
+            floors = FLOORS[unofficial_shelf_id]
+        return floors
 
     def count(self):
         # TODO
