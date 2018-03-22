@@ -1,6 +1,5 @@
 {
-    "shelf_system_0":{
-        "0":{
+
             "027995": "Shelf1/DomestosKraftUniversalreiniger/SM_DomestosKraftUniversalreiniger_fixed.dae",
             "544205": "",
             "384160": "Shelf1/DenkMitHygieneAllzweckreiniger/SM_DenkMitHygieneAllzweckreiniger_fixed.dae",
@@ -8,59 +7,50 @@
             "534812": "",
             "402610": "",
             "433961": "",
-            "507923": ""
-        },
-        "1":{
+            "507923": "",
+
             "500183": "",
             "046088": "Shelf1/DenkMitMaschinenpfleger/SM_DenkMitMaschinenpfleger_fixed.dae",
             "262289": "Shelf1/CalgonitFinishMaschinenpfleger/SM_CalgonitFinishMaschinenpfleger_fixed.dae",
             "010055": "Shelf1/CalgonitFinishSpezialSalz/SM_CalgonitFinishSpezialSalz_fixed.dae",
             "015652": "Shelf1/CalgonitFinishKlarspueler/SM_CalgonitFinishKlarspueler_fixed.dae",
             "516937": "",
-            "125481": ""
-        },
-        "2":{
+            "125481": "",
+
             "004728": "Shelf1/DenkMitSpezialsalz/SM_DenkMitSpezialsalz_fixed.dae",
             "196068": "Shelf1/DenkMitGeschirrReiniger/SM_DenkMitGeschirrReiniger_fixed.dae",
             "332384": "Shelf1/DenkMitGeschirrReinigerEvo/SM_DenkMitGeschirrReinigerEvo_fixed.dae",
             "523129": "Shelf1/DenkMitGeschirrReinigerClassic/SM_DenkMitGeschirrReinigerClassic_fixed.dae",
             "424929": "",
-            "235542": "Shelf1/DenkMitGeschirrReinigerNature/SM_DenkMitGeschirrReinigerNature_fixed.dae"
-        },
-        "3":{
+            "235542": "Shelf1/DenkMitGeschirrReinigerNature/SM_DenkMitGeschirrReinigerNature_fixed.dae",
+
             "124036": "",
             "176671": "",
             "422771": "",
             "331372": "Shelf1/SomatExtraAllIn1/SM_SomatExtraAllIn1_fixed.dae",
             "377954": "Shelf1/SomatClassic/SM_SomatClassic_fixed.dae",
             "192389": "",
-            "227030": ""
-        },
-        "4":{
+            "227030": "",
+
             "200563": "",
             "447600": "",
             "501155": "",
             "501156": "Shelf1/CalgonitFinish/SM_CalgonitFinish_fixed.dae",
-            "534910": "Shelf1/CalgonitFinishVorratspack/SM_CalgonitFinishVorratspack_fixed.dae"
-        }
-    },
-    "shelf_system_1":{
-        "0":{
+            "534910": "Shelf1/CalgonitFinishVorratspack/SM_CalgonitFinishVorratspack_fixed.dae",
+
             "013462": "",
             "458823": "",
             "522273": "",
             "102696": "",
             "102694": "",
-            "519151": ""
-        },
-        "1":{
+            "519151": "",
+
             "522990": "",
             "522991": "",
             "523009": "Shelf2/BlendAMedExtraFrisch/SM_BlendAMedExtraFrisch_fixed.dae",
             "522985": "Shelf2/BlendAMedNatuerlicheKraeuter/SM_BlendAMedNatuerlicheKraeuter_fixed.dae",
-            "523010": "Shelf2/BlendAMedKristallweiss/SM_BlendAMedKristallweiss_fixed.dae"
-        },
-        "2":{
+            "523010": "Shelf2/BlendAMedKristallweiss/SM_BlendAMedKristallweiss_fixed.dae",
+
             "522989": "",
             "522988": "Shelf2/BlendAMedExpert/SM_BlendAMedExpert_fixed.dae",
             "294763": "",
@@ -72,25 +62,20 @@
             "036946": "Shelf2/WeledaRatanhiaZahmcreme/SM_WeledaRatanhiaZahncreme_fixed.dae",
             "034945": "Shelf2/WeledaSoleZahncreme/SM_WeledaSoleZahncreme_fixed.dae",
             "036988": "Shelf2/WeledaCalendulaZahncreme/SM_WeledaCalendulaZahncreme_fixed.dae",
-            "190755": "Shelf2/Aminomed/SM_Aminomed_fixed.dae"
-        },
-        "3":{
+            "190755": "Shelf2/Aminomed/SM_Aminomed_fixed.dae",
+
             "155777": "",
             "463940": "",
-            "539355": ""
-        }
-    },
-    "shelf_system_2":{
-        "0":{
+            "539355": "",
+
             "260725": "Shelf3/BaleaLeichteBodylotionSanfteFeuchtigkeitspflege/SM_BaleaLeichteBodylotionSanfteFeuchtigkeitspflege_fixed.dae",
             "260707": "",
             "554301": "Shelf3/BaleaBodylotionButtermilkLemon/SM_BaleaBodylotionButtermilkLemon_fixed.dae",
             "404491": "Shelf3/BaleaBodylotionCocosSheanuss/SM_BaleaBodylotionCocosSheanuss_fixed.dae",
             "521873": "Shelf3/BaleaBodylotionGlueckshauch/SM_BaleaBodylotionGlueckshauch_fixed.dae",
             "402589": "Shelf3/BaleaBodybalsamSensitive/SM_BaleaBodybalsamSensitive_fixed.dae",
-            "260667": "Shelf3/BaleaBodylotionUrea/SM_BaleaBodylotionUrea_fixed.dae"
-        },
-        "1":{
+            "260667": "Shelf3/BaleaBodylotionUrea/SM_BaleaBodylotionUrea_fixed.dae",
+
             "520698": "Shelf3/BaleaBodyLotionKakao/SM_BaleaBodylotionKakao_fixed.dae",
             "520696": "Shelf3/BaleaBodyLotionBraunerZuckerMitFeige/SM_BaleaBodyLotionBraunerZuckerMitFeige_fixed.dae",
             "520689": "Shelf3/BaleaSprayOnBodyLotion/SM_BaleaSprayOnBodyLotion_fixed.dae",
@@ -100,9 +85,8 @@
             "511860": "Shelf3/BaleaDuschBodymilkVanilleCocos/SM_BaleaDuschBodymilkVanilleCocos_fixed.dae",
             "260700": "",
             "260696": "Shelf3/BaleaVitalHautstraffendeBodylotion/SM_BaleaVitalHautraffendeBodtlotion_fixed.dae",
-            "399599": "Shelf3/BaleaBodylotionMagicSummer/SM_BaleaBodylotionMagicSummer_fixed.dae"
-        },
-        "2":{
+            "399599": "Shelf3/BaleaBodylotionMagicSummer/SM_BaleaBodylotionMagicSummer_fixed.dae",
+
             "535475": "Shelf3/BaleaMenSensitiveBodylotion/SM_BaleaMenSensitiveBodylotion_fixed.dae",
             "519763": "",
             "520209": "Shelf3/BaleaTattoo/SM_BaleaTattoo_fixed.dae",
@@ -114,9 +98,8 @@
             "472787": "Shelf3/BaleaPflegendesBodySerum/SM_BaleaPflegendesBodySerum_fixed.dae",
             "293875": "Shelf3/BaleaSoftOelBalsam/SM_BaleaSoftOelBalsam_fixed.dae",
             "536979": "",
-            "411552": ""
-        },
-        "3":{
+            "411552": "",
+
             "460470": "",
             "460201": "",
             "536952": "",
@@ -130,9 +113,8 @@
             "518876": "Shelf3/BilouFizzyBerry/SM_BilouFizzyBerry_fixed.dae",
             "544375": "Shelf3/DoveRevitalisierendesBodyLotion/SM_DoveRevitalisierendesBodyLotion_fixed.dae",
             "544382": "Shelf3/DoveRegenerierendesBodyLotion/SM_DoveRegenerierendesBodyLotion_fixed.dae",
-            "553733": "Shelf3/DoveIntensiveBodyLotion/SM_DoveIntensiveBodyLotion_fixed.dae"
-        },     
-        "4":{
+            "553733": "Shelf3/DoveIntensiveBodyLotion/SM_DoveIntensiveBodyLotion_fixed.dae",
+
             "544760": "",
             "544790": "",
             "544788": "Shelf3/DoveDermaSpaIntensiv/SM_DoveDermaSpaIntensiv_fixed.dae",
@@ -143,11 +125,8 @@
             "553735": "Shelf3/DoveHydroBodyLotion/SM_DoveHydroBodyLotion_fixed.dae",
             "553736": "Shelf3/DoveReichhaltigeBodyMilk/SM_DoveReichhaltigeBodyMilk_fixed.dae",
             "553726": "Shelf3/DoveVerwoehnendeBodyLotion/SM_DoveVerwoehnendeBodyLotion_fixed.dae",
-            "553715": "Shelf3/DoveVerwoehnendeBodyLotion2/SM_DoveVerwoehnendeBodyLotion2_fixed.dae"
-        }
-    },
-    "shelf_system_3":{
-        "0":{
+            "553715": "Shelf3/DoveVerwoehnendeBodyLotion2/SM_DoveVerwoehnendeBodyLotion2_fixed.dae",
+
             "250917": "Shelf4/BaleaSanfteReinigungsmilch/SM_BaleaSanfteReinigungsmilch_fixed.dae",
             "251005": "",
             "253896": "",
@@ -156,9 +135,8 @@
             "378940": "Shelf4/BaleaAugenMakeUpEntfernerPads2/SM_BaleaAugenMakeUpEntfernerPads2_fixed.dae",
             "347469": "",
             "279513": "",
-            "404079": ""
-        },
-        "1":{
+            "404079": "",
+
             "470266": "",
             "274302": "",
             "278987": "",
@@ -168,9 +146,8 @@
             "497298": "Shelf4/BaleaPflegendeGesichtsCreme/SM_BaleaPflegendeGesichtsCreme_fixed.dae",
             "250899": "Shelf4/BaleaReichhaltigeTagescreme/SM_BaleaReichhaltigeTagescreme_fixed.dae",
             "522986": "",
-            "279042": ""
-        },
-        "2":{
+            "279042": "",
+
             "469679": "",
             "252312": "Shelf4/BaleaAquaFeuchtigkeitsSerum/SM_BaleaAquaFeuchtigkeitsSerum_fixed.dae",
             "251219": "",
@@ -185,9 +162,8 @@
             "476935": "Shelf4/BaleaGetoenteFeuchtigkeitsCreme2/SM_BaleaGetoenteFeuchtigkeitsCreme2_fixed.dae",
             "250983": "Shelf4/BaleaGesichtspflegeMagicSummer/SM_BaleaGesichtspflegeMagicSummer_fixed.dae",
             "522603": "Shelf4/BaleaOelfreiesCremeGel/SM_BaleaOelfreiesCremeGel_fixed.dae",
-            "522602": "Shelf4/BaleaOelfreiesPflegeSerum/SM_BaleaOelfreiesPflegeSerum_fixed.dae"
-        },
-        "3":{
+            "522602": "Shelf4/BaleaOelfreiesPflegeSerum/SM_BaleaOelfreiesPflegeSerum_fixed.dae",
+
             "251188": "Shelf4/BaleaAntiFaltenSerum/SM_BaleaAntiFaltenSerum_fixed.dae",
             "471975": "",
             "250996": "",
@@ -203,9 +179,8 @@
             "515141": "",
             "250919": "Shelf4/BaleaTagescremeUrea/SM_BaleaTagescremeUrea_fixed.dae",
             "250949": "Shelf4/BaleaNachtcremeUrea/SM_BaleaNachtcremeUrea_fixed.dae",
-            "253254": ""
-        },
-        "4":{
+            "253254": "",
+
             "253179": "",
             "250898": "Shelf4/BaleaFeuchtigkeitsSpendendeTagescreme/SM_BaleaFeuchtigkeitsSpendendeTagescreme_fixed.dae",
             "534357": "",
@@ -219,9 +194,8 @@
             "415961": "Shelf4/BaleaBeautyEffectFaltenFiller/SM_BaleaBeautyEffectFaltenFiller_fixed.dae",
             "308627": "Shelf4/BaleaBeautyEffectPowerMaske/SM_BaleaBeautyEffectPowerMaske_fixed.dae",
             "256519": "",
-            "403170": ""
-        },
-        "5":{
+            "403170": "",
+
             "256479": "Shelf4/BaleaVitalStraffendeAugencreme/SM_BaleaVitalStraffendeAugencreme_fixed.dae",
             "256500": "",
             "256511": "",
@@ -237,6 +211,4 @@
             "390740": "",
             "256476": "",
             "518581": ""
-        }
-    }
 }

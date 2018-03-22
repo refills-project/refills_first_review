@@ -182,8 +182,9 @@ class CRAM(object):
         if len(facings) == 0:
             self.move_base.move_relative([self.knowrob.get_floor_width(), 0, 0])
         else:
+            frame_id = self.knowrob.get_object_frame_id(shelf_id)
             for i, facing_y in enumerate(reversed(sorted(facings))):
-                self.move_base.move_absolute_xyz(self.knowrob.get_object_frame_id(shelf_id),
+                self.move_base.move_absolute_xyz(frame_id,
                                                  FLOOR_SCANNING_OFFSET['x'] + facing_y,
                                                  FLOOR_SCANNING_OFFSET['y'],
                                                  FLOOR_SCANNING_OFFSET['z'])

@@ -23,15 +23,14 @@ FLOORS = {
 
 
 class RoboSherlock(object):
-    def __init__(self, knowrob, counting_enabled=True):
+    def __init__(self, knowrob):
         self.knowrob = knowrob
-        self.counting_enabled = counting_enabled
         # TODO use paramserver [low]
         # TODO implement all the things [high]
 
-        self.separator_detection = SeparatorClustering(self.counting_enabled, knowrob)
+        self.separator_detection = SeparatorClustering(knowrob)
         self.baseboard_detection = BaseboardDetector()
-        self.barcode_detection = BarcodeDetector(self.counting_enabled)
+        self.barcode_detection = BarcodeDetector(knowrob)
         try:
             rospy.wait_for_service('/RoboSherlock/json_query', 1)
             self.robosherlock_service = rospy.ServiceProxy('/RoboSherlock/json_query',

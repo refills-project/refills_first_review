@@ -17,9 +17,8 @@ from refills_first_review.tfwrapper import TfWrapper
 
 
 class SeparatorClustering(object):
-    def __init__(self, counting_hack_enabled, knowrob):
+    def __init__(self, knowrob):
         self.knowrob = knowrob
-        self.counting_enabled = counting_hack_enabled
         # TODO use paramserver [low]
         self.tf = TfWrapper(6)
         self.marker_pub = rospy.Publisher('visualization_marker_array', MarkerArray, queue_size=10)
@@ -50,23 +49,19 @@ class SeparatorClustering(object):
             rospy.loginfo('camera offline; \'detecting\' separators anyway')
             self.fake_detection()
         separators = self.cluster()
-        # self.publish_as_marker(separators)
         return separators
 
     def separator_cb(self, separator_array):
+        frame_id = self.knowrob.get_object_frame_id(self.current_floor_id)
         for separator in separator_array.separators:
-            map_pose = self.tf.transform_pose(self.map_frame_id, separator.separator_pose)
-            if map_pose is not None:
-                position = [map_pose.pose.position.x,
-                            map_pose.pose.position.y,
-                            map_pose.pose.position.z]
-                self.detections.append(position)
+            p = self.tf.transform_pose(frame_id, separator.separator_pose)
+            if p is not None:
+                self.detections.append([p.pose.position.x, p.pose.position.y, p.pose.position.z])
 
     def cluster(self):
-        # TODO filter separators that don't belong to the shelf
         data = np.array(self.detections)
         separators = []
-        frame_id = self.knowrob.get_object_frame_id(self.current_shelf_id)
+        old_frame_id = self.knowrob.get_object_frame_id(self.current_floor_id)
         if len(data) == 0:
             rospy.logwarn('no separators detected')
         else:
@@ -76,46 +71,43 @@ class SeparatorClustering(object):
             for i, label in enumerate(labels):
                 if label != -1:
                     separator = PoseStamped()
-                    separator.header.frame_id = self.map_frame_id
-                    # separator.header.stamp = rospy.get_rostime()
+                    separator.header.frame_id = old_frame_id
                     separator.pose.position = Point(*self.cluster_to_separator(data[clusters.labels_ == label]))
-                    separator.pose.orientation = Quaternion(*quaternion_about_axis(np.pi/2, [0,0,1]))
-                    separator = self.tf.transform_pose(frame_id, separator)
-                    if separator.pose.position.x < 1.04 and separator.pose.position.x > -0.04:
+                    separator.pose.orientation = Quaternion(*quaternion_about_axis(-np.pi / 2, [0, 0, 1]))
+                    if -0.04 < separator.pose.position.x and separator.pose.position.x < 1.04:
                         separators.append(separator)
         return separators
 
     def cluster_to_separator(self, separator_cluster):
         return separator_cluster.mean(axis=0)
 
-    def publish_as_marker(self, separators):
-        ma = MarkerArray()
-        for i, separator in enumerate(separators):
-            m = Marker()
-            m.header = separator.header
-            m.ns = self.marker_ns
-            m.id = i
-            m.type = Marker.CUBE
-            m.action = Marker.ADD
-            m.pose = deepcopy(separator.pose)
-            m.pose.position.y += self.separator_maker_scale.y / 2
-            m.scale = self.separator_maker_scale
-            m.color = self.separator_maker_color
-            ma.markers.append(m)
-        self.marker_pub.publish(ma)
+    # def publish_as_marker(self, separators):
+    #     ma = MarkerArray()
+    #     for i, separator in enumerate(separators):
+    #         m = Marker()
+    #         m.header = separator.header
+    #         m.ns = self.marker_ns
+    #         m.id = i
+    #         m.type = Marker.CUBE
+    #         m.action = Marker.ADD
+    #         m.pose = deepcopy(separator.pose)
+    #         m.pose.position.y += self.separator_maker_scale.y / 2
+    #         m.scale = self.separator_maker_scale
+    #         m.color = self.separator_maker_color
+    #         ma.markers.append(m)
+    #     self.marker_pub.publish(ma)
 
     def fake_detection(self):
         num_fake_separators = 6
+        frame_id = self.knowrob.get_object_frame_id(self.current_floor_id)
         for i in range(num_fake_separators):
-            for j in range(4):
-                p = self.tf.lookup_transform(self.knowrob.get_object_frame_id(self.current_shelf_id), 'camera_link')
-                p.pose.position.x = i * 1 / (num_fake_separators - 1)
+            for j in range(self.min_samples + 1):
+                p = PoseStamped()
+                p.header.frame_id = frame_id
+                p.pose.position.x = i / (num_fake_separators - 1)
                 p.pose.position.y = 0
-                p.pose.orientation = Quaternion(0,0,0,1)
-                p = self.tf.transform_pose(self.map_frame_id, p)
-                self.detections.append([p.pose.position.x,
-                                        p.pose.position.y,
-                                        p.pose.position.z, ])
+                p.pose.orientation = Quaternion(0, 0, 0, 1)
+                self.detections.append([p.pose.position.x, p.pose.position.y, p.pose.position.z])
 
 
 if __name__ == '__main__':

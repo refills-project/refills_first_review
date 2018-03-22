@@ -1,6 +1,7 @@
 from __future__ import division
 
 import json
+from random import choice
 from simplejson import OrderedDict
 
 import rospy
@@ -23,8 +24,8 @@ MAP = 'map'
 
 
 class BarcodeDetector(object):
-    def __init__(self, counting_enabled):
-        self.counting_enabled = counting_enabled
+    def __init__(self, knowrob):
+        self.knowrob = knowrob
         self.load_barcode_to_mesh_map()
         # TODO use paramserver [low]
         self.shelf_width = 1
@@ -41,7 +42,6 @@ class BarcodeDetector(object):
         self.text_color = ColorRGBA(1, 1, 1, 1)
         self.object_scale = Vector3(.05, .05, .05)
         self.text_scale = Vector3(0, 0, .05)
-
 
     def load_barcode_to_mesh_map(self):
         try:
@@ -70,44 +70,49 @@ class BarcodeDetector(object):
         return self.barcodes
 
     def detect_fake_barcodes(self):
-        if self.shelf_id in self.barcode_to_mesh:
-            barcodes_len = len(self.barcode_to_mesh[self.shelf_id][str(self.floor_id)])
-            for i, barcode in enumerate(self.barcode_to_mesh[self.shelf_id][str(self.floor_id)]):
-                barcode = '2{}3'.format(barcode)
-                p = self.tf.lookup_transform(self.shelf_id, 'camera_link')
-                p.pose.position.x = (i + .5) * 1 / (barcodes_len)
-                p.pose.position.y = 0
-                p.pose.orientation = Quaternion(0, 0, 0, 1)
-
-                p = self.tf.transform_pose(self.shelf_id, p)
-                self.barcodes[barcode].append([p.pose.position.x,
-                                               p.pose.position.y,
-                                               p.pose.position.z, ])
+        num_of_barcodes = 5
+        frame_id = self.knowrob.get_object_frame_id(self.floor_id)
+        for i in range(num_of_barcodes):
+            barcode = choice(self.barcode_to_mesh.keys())
+            p = PoseStamped()
+            p.header.frame_id = frame_id
+            p.pose.position.x = (i + .5) / (num_of_barcodes)
+            p.pose.position.y = 0
+            p.pose.orientation = Quaternion(0, 0, 0, 1)
+            self.barcodes[barcode].append(p)
 
     def cluster(self):
-        for barcode, positions in self.barcodes.items():
-            self.barcodes[barcode] = np.mean(positions, axis=0)
+        frame_id = self.knowrob.get_object_frame_id(self.floor_id)
+        for barcode, poses in self.barcodes.items():
+            positions = [[p.pose.position.x, p.pose.position.y, p.pose.position.z] for p in poses]
+            position = np.mean(positions, axis=0)
+            p = PoseStamped()
+            p.header.frame_id = frame_id
+            p.pose.position = Point(*position)
+            p.pose.orientation.w = 1
+            self.barcodes[barcode] = p
 
     def cb(self, data):
         p = self.tf.transform_pose(MAP, data.barcode_pose)
         if p is not None:
             p.header.stamp = rospy.Time()
-            p = self.tf.transform_pose(self.shelf_id, p).pose.position
-            if p.x > 0.0 and p.x < 1.0:
-                self.barcodes[data.barcode].append([p.x, p.y, p.z])
+            p = self.tf.transform_pose(self.knowrob.get_object_frame_id(self.floor_id), p)
+            if p.pose.position.x > 0.0 and p.pose.position.x < 1.0:
+                self.barcodes[data.barcode].append(p)
 
     def publish_as_marker(self):
         ma = MarkerArray()
-        for i, (barcode, position) in enumerate(self.barcodes.items()):
+        frame_id = self.knowrob.get_object_frame_id(self.floor_id)
+        for i, (barcode, pose) in enumerate(self.barcodes.items()):
             # object
             m = Marker()
-            m.header.frame_id = self.shelf_id
+            m.header.frame_id = frame_id
             m.ns = self.marker_object_ns
             m.id = int(barcode)
             m.action = Marker.ADD
-            m.pose.position = Point(*position)
+            m.pose = pose.pose
             try:
-                mesh_path = self.barcode_to_mesh[self.shelf_id][str(self.floor_id)][str(barcode)[1:-1]]
+                mesh_path = self.barcode_to_mesh[str(barcode)]
             except KeyError as e:
                 mesh_path = ''
             if mesh_path == '':
@@ -126,7 +131,7 @@ class BarcodeDetector(object):
 
             # text
             m = Marker()
-            m.header.frame_id = self.shelf_id
+            m.header.frame_id = frame_id
             m.ns = self.marker_text_ns
             m.id = int(barcode)
             m.type = Marker.TEXT_VIEW_FACING
@@ -134,7 +139,7 @@ class BarcodeDetector(object):
             m.text = barcode
             m.scale = self.text_scale
             m.color = self.text_color
-            m.pose.position = Point(*position)
+            m.pose = pose.pose
             m.pose.position.z += 0.07
             ma.markers.append(m)
         if len(ma.markers) > 0:
@@ -144,7 +149,7 @@ class BarcodeDetector(object):
 if __name__ == '__main__':
     rospy.init_node('baseboard_detection_test')
     d = BarcodeDetector(True)
-    d.start_listening('shelf_system_1',2)
+    d.start_listening('shelf_system_1', 2)
     print('barcode detection test started')
     cmd = raw_input('stop? [enter]')
     print('barcode detection test ended')

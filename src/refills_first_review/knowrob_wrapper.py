@@ -16,19 +16,19 @@ SEPARATOR = 'DMShelfSeparator4Tiles'
 BARCODE = 'DMShelfLabel'
 MOUNTING_BAR = 'DMShelfMountingBar'
 
+
 class KnowRob(object):
     def __init__(self):
-        # TODO setup knowrob connection [high]
         # TODO implement all the things [high]
         # TODO use paramserver [low]
         self.tf = TfWrapper()
         self.floors = {}
-        self.shelf_to_floor = defaultdict(list) # TODO replace with prolog query
+        self.shelf_to_floor = defaultdict(list)  # TODO replace with prolog query
         self.shelves = {}
         self.shelf_ids = []
         self.separators = {}
+        rospy.wait_for_service('/json_prolog/simple_query', 1)
         self.prolog = json_prolog.Prolog()
-        rospy.logwarn('knowrob not fully integrated')
 
     def prolog_query(self, q):
         print(q)
@@ -49,13 +49,13 @@ class KnowRob(object):
 
     def pose_to_prolog(self, pose_stamped):
         return '[\'{}\', _, [{},{},{}], [{},{},{},{}]]'.format(pose_stamped.header.frame_id,
-                                                              pose_stamped.pose.position.x,
-                                                              pose_stamped.pose.position.y,
-                                                              pose_stamped.pose.position.z,
-                                                              pose_stamped.pose.orientation.x,
-                                                              pose_stamped.pose.orientation.y,
-                                                              pose_stamped.pose.orientation.z,
-                                                              pose_stamped.pose.orientation.w)
+                                                               pose_stamped.pose.position.x,
+                                                               pose_stamped.pose.position.y,
+                                                               pose_stamped.pose.position.z,
+                                                               pose_stamped.pose.orientation.x,
+                                                               pose_stamped.pose.orientation.y,
+                                                               pose_stamped.pose.orientation.z,
+                                                               pose_stamped.pose.orientation.w)
 
     # shelves
     def add_shelves(self, shelves):
@@ -90,24 +90,22 @@ class KnowRob(object):
     def get_shelves(self):
         return self.get_objects(SHELF_FRAME)
 
-    def get_object_frame_id(self, shelf_id):
-        q = 'object_frame_name(\'{}\', R).'.format(shelf_id)
+    def get_object_frame_id(self, object_id):
+        q = 'object_frame_name(\'{}\', R).'.format(object_id)
         return self.prolog_query(q)[0]['R'].replace('\'', '')
 
     # floor
     def add_shelf_floors(self, shelf_id, floors):
         frame_id = self.get_object_frame_id(shelf_id)
         for position in floors:
-            type = SHELF_FLOOR if position[1]<0.13 else SHELF_FLOOR_MOUNTING
+            type = SHELF_FLOOR if position[1] < 0.13 else SHELF_FLOOR_MOUNTING
             p = PoseStamped()
             p.header.frame_id = frame_id
             p.pose.position = Point(*position)
             p.pose.orientation.w = 1
-            # TODO remove transfrom to map when daniel fixed bug
-            p = self.tf.transform_pose(MAP, p)
             q = 'belief_perceived_at({}:\'{}\',{}, 0.01, R)'.format(DM_MARKET, type, self.pose_to_prolog(p))
             solutions = self.prolog_query(q)
-            object_id = solutions[0]['R'].replace('\'','')
+            object_id = solutions[0]['R'].replace('\'', '')
             self.shelf_to_floor[shelf_id].append(object_id)
         return True
 
@@ -119,7 +117,7 @@ class KnowRob(object):
         for floor, pose in self.floors.items():
             if floor in self.shelf_to_floor[shelf_id]:
                 floors.append((floor, self.tf.transform_pose(frame_id, pose)))
-        floors = list(sorted(floors, key=lambda x:x[1].pose.position.z))
+        floors = list(sorted(floors, key=lambda x: x[1].pose.position.z))
         self.floors = OrderedDict(floors)
         return self.floors
 
@@ -145,31 +143,29 @@ class KnowRob(object):
         return not self.is_bottom_floor(floor_id) and not self.is_hanging_foor(floor_id)
 
     def add_separators(self, shelf_id, floor_id, separators):
-        for separator in separators:
-            p = self.tf.transform_pose(MAP, separator)
+        for p in separators:
             q = 'belief_perceived_at({}:\'{}\',{}, 0.01, R)'.format(DM_MARKET, SEPARATOR, self.pose_to_prolog(p))
             solutions = self.prolog_query(q)
-            object_id = self.remove_http_shit(solutions[0]['R'])
-            pass
-        self.separators[shelf_id, floor_id] = separators
+        # self.separators[shelf_id, floor_id] = separators
         return True
 
     def add_barcodes(self, barcodes):
-        # TODO
+        # for barcode, p in barcodes.items():
+        #     q = 'belief_perceived_at({}:\'{}\',{}, 0.01, R)'.format(DM_MARKET, BARCODE, self.pose_to_prolog(p))
+        #     solutions = self.prolog_query(q)
         pass
 
     def get_facings(self, shelf_id, floor_id):
-        separators = []
-        frame_id = self.get_object_frame_id(shelf_id)
-        for separator in self.separators[shelf_id, floor_id]:
-            separator.header.stamp = rospy.Time()
-            separator_map = self.tf.transform_pose(frame_id, separator)
-            separators.append(separator_map.pose.position.x)
-        facings = []
-        separators = list(sorted(separators))
-        for i, facing in enumerate(sorted(separators)[:-1]):
-            facings.append((facing + separators[i + 1]) / 2)
-        return facings
-
-    def get_object_mesh(self, barcode):
-        pass
+        # TODO ask knowrob
+        return []
+        # separators = []
+        # frame_id = self.get_object_frame_id(shelf_id)
+        # for separator in self.separators[shelf_id, floor_id]:
+        #     separator.header.stamp = rospy.Time()
+        #     separator_map = self.tf.transform_pose(frame_id, separator)
+        #     separators.append(separator_map.pose.position.x)
+        # facings = []
+        # separators = list(sorted(separators))
+        # for i, facing in enumerate(sorted(separators)[:-1]):
+        #     facings.append((facing + separators[i + 1]) / 2)
+        # return facings
