@@ -110,7 +110,7 @@ class BarcodeDetector(object):
             m.ns = self.marker_object_ns
             m.id = int(barcode)
             m.action = Marker.ADD
-            m.pose = pose.pose
+            m.pose = deepcopy(pose.pose)
             try:
                 mesh_path = self.barcode_to_mesh[str(barcode)]
             except KeyError as e:
@@ -139,7 +139,7 @@ class BarcodeDetector(object):
             m.text = barcode
             m.scale = self.text_scale
             m.color = self.text_color
-            m.pose = pose.pose
+            m.pose = deepcopy(pose.pose)
             m.pose.position.z += 0.07
             ma.markers.append(m)
         if len(ma.markers) > 0:

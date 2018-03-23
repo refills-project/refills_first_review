@@ -2,23 +2,26 @@
 
 from __future__ import print_function, division
 
+import threading
 import traceback
 from simplejson import OrderedDict
 import numpy as np
 from time import time
 
 import rospy
+from actionlib import SimpleActionServer
 from geometry_msgs.msg import QuaternionStamped, Quaternion, PointStamped, Point, PoseStamped, Pose
 from multiprocessing import TimeoutError
-from std_msgs.msg import Header
-from tf.transformations import quaternion_about_axis
 
-from refills_first_review.baseboard_detection import BaseboardDetector
+from gnomevfs._gnomevfs import CancelledError
+from refills_msgs.msg._ScanningAction import ScanningAction
+from refills_msgs.msg._ScanningGoal import ScanningGoal
+from std_msgs.msg import Header
+
 from refills_first_review.knowrob_wrapper import KnowRob
 from refills_first_review.move_arm import GiskardWrapper
 from refills_first_review.move_base import MoveBase
 from refills_first_review.robosherlock_wrapper import RoboSherlock
-from refills_first_review.separator_detection import SeparatorClustering
 
 # base
 # shelf id
@@ -48,16 +51,47 @@ SHELF_BASEBOARD = PoseStamped(Header(0, rospy.Time(), 'base_footprint'),
                                    Quaternion(-0.000, 0.841, -0.541, 0.000)))
 
 
+ACTION_NAME = 'scanning_action'
+
 class CRAM(object):
     def __init__(self):
         # TODO use paramserver [low]
         # TODO live logging [high]
         # TODO SMS [high]
+        self._as = SimpleActionServer(ACTION_NAME, ScanningAction, execute_cb=self.action_cb, auto_start=False)
+        self._as.register_preempt_callback(self.preempt_cb)
         self.knowrob = KnowRob()
         self.robosherlock = RoboSherlock(self.knowrob)
         self.move_base = MoveBase(enabled=True)
         self.move_arm = GiskardWrapper(enabled=True)
         self.map_frame_id = rospy.get_param('~/map', 'map')
+
+    def start(self):
+        self._as.start()
+        rospy.loginfo('waiting for scanning action goal')
+
+    def preempt_cb(self):
+        self.STOP()
+        raise CancelledError('cancelled old goal')
+
+    def action_cb(self, goal):
+        if goal.type != ScanningGoal.COMPLETE_SCAN:
+            rospy.logerr('only complete scans are supported')
+            self._as.set_aborted('only complete scans are supported')
+        try:
+            self.move_arm.drive_pose()
+            real_shelves = self.knowrob.get_shelves()
+            real_shelf_keys = real_shelves.keys()
+            for shelf_id in goal.loc_id:
+                rospy.loginfo('scanning {}'.format(shelf_id))
+                # TODO hack until knowrob is integrated into mock gui
+                self.unofficial_shelf_id = int(shelf_id[-1])
+                real_shelf_id = real_shelf_keys[self.unofficial_shelf_id]
+                self.scan_shelf(real_shelf_id)
+                # TODO feedback
+            self._as.set_succeeded()
+        except CancelledError as e:
+            rospy.loginfo('preempted')
 
     def scan_shop(self):
         # TODO make sure that nothing is close [medium]
@@ -76,9 +110,9 @@ class CRAM(object):
         rospy.loginfo('shelf baseboard detection requires manuel mode')
         rospy.loginfo('move to free space plx')
         cmd = raw_input('done? [y]')
-        if cmd.isdigit():
+        if cmd == 'n':
             rospy.logwarn('skipping baseboard detection')
-            self.robosherlock.baseboard_detection.detect_fake_shelves(cmd)
+            self.robosherlock.baseboard_detection.detect_fake_shelves('0123')
             self.robosherlock.start_baseboard_detection()
         else:
             if cmd == 'y':
@@ -206,8 +240,11 @@ if __name__ == '__main__':
         cmd = raw_input('start demo? [y]')
         if cmd == 'y':
             rospy.loginfo('starting REFILLS scenario 1 demo')
-            cram.scan_shop()
-            rospy.loginfo('REFILLS scenario 1 demo completed')
+            cram.detect_baseboards()
+            cram.start()
+            rospy.spin()
+            # cram.scan_shop()
+            # rospy.loginfo('REFILLS scenario 1 demo completed')
     except Exception as e:
         traceback.print_exc()
     finally:

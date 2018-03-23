@@ -150,9 +150,9 @@ class KnowRob(object):
         return True
 
     def add_barcodes(self, barcodes):
-        # for barcode, p in barcodes.items():
-        #     q = 'belief_perceived_at({}:\'{}\',{}, 0.01, R)'.format(DM_MARKET, BARCODE, self.pose_to_prolog(p))
-        #     solutions = self.prolog_query(q)
+        for barcode, p in barcodes.items():
+            q = 'belief_perceived_at({}:\'{}\',{}, 0.01, R)'.format(DM_MARKET, BARCODE, self.pose_to_prolog(p))
+            solutions = self.prolog_query(q)
         pass
 
     def get_facings(self, shelf_id, floor_id):

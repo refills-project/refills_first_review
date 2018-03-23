@@ -103,7 +103,7 @@ class RoboSherlock(object):
                                p.pose.position.y,
                                p.pose.position.z])
             floors = list(sorted(floors, key=lambda x: x[-1]))
-            floors = [x for x in floors if x > 0.3]
+            floors = [x for x in floors if x[-1] > 0.3]
             floors = [FLOORS[shelf_id][0]] + floors
             print('detected shelfs at heights: {}'.format(floors))
         else:
