@@ -71,7 +71,7 @@ class BarcodeDetector(object):
 
     def detect_fake_barcodes(self):
         num_of_barcodes = 5
-        frame_id = self.knowrob.get_object_frame_id(self.floor_id)
+        frame_id = self.knowrob.get_perceived_frame_id(self.floor_id)
         for i in range(num_of_barcodes):
             barcode = choice(self.barcode_to_mesh.keys())
             p = PoseStamped()
@@ -82,7 +82,7 @@ class BarcodeDetector(object):
             self.barcodes[barcode].append(p)
 
     def cluster(self):
-        frame_id = self.knowrob.get_object_frame_id(self.floor_id)
+        frame_id = self.knowrob.get_perceived_frame_id(self.floor_id)
         for barcode, poses in self.barcodes.items():
             positions = [[p.pose.position.x, p.pose.position.y, p.pose.position.z] for p in poses]
             position = np.mean(positions, axis=0)
@@ -96,13 +96,13 @@ class BarcodeDetector(object):
         p = self.tf.transform_pose(MAP, data.barcode_pose)
         if p is not None:
             p.header.stamp = rospy.Time()
-            p = self.tf.transform_pose(self.knowrob.get_object_frame_id(self.floor_id), p)
+            p = self.tf.transform_pose(self.knowrob.get_perceived_frame_id(self.floor_id), p)
             if p.pose.position.x > 0.0 and p.pose.position.x < 1.0:
                 self.barcodes[data.barcode].append(p)
 
     def publish_as_marker(self):
         ma = MarkerArray()
-        frame_id = self.knowrob.get_object_frame_id(self.floor_id)
+        frame_id = self.knowrob.get_perceived_frame_id(self.floor_id)
         for i, (barcode, pose) in enumerate(self.barcodes.items()):
             # object
             m = Marker()

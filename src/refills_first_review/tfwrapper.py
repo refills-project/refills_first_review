@@ -22,7 +22,7 @@ class TfWrapper(object):
             transform = self.tfBuffer.lookup_transform(target_frame,
                                                        pose.header.frame_id,  # source frame
                                                        pose.header.stamp,
-                                                       rospy.Duration(1.0))
+                                                       rospy.Duration(2.0))
             new_pose = do_transform_pose(pose, transform)
             return new_pose
         except ExtrapolationException as e:

@@ -52,7 +52,7 @@ class SeparatorClustering(object):
         return separators
 
     def separator_cb(self, separator_array):
-        frame_id = self.knowrob.get_object_frame_id(self.current_floor_id)
+        frame_id = self.knowrob.get_perceived_frame_id(self.current_floor_id)
         for separator in separator_array.separators:
             p = self.tf.transform_pose(frame_id, separator.separator_pose)
             if p is not None:
@@ -61,7 +61,7 @@ class SeparatorClustering(object):
     def cluster(self):
         data = np.array(self.detections)
         separators = []
-        old_frame_id = self.knowrob.get_object_frame_id(self.current_floor_id)
+        old_frame_id = self.knowrob.get_perceived_frame_id(self.current_floor_id)
         if len(data) == 0:
             rospy.logwarn('no separators detected')
         else:
@@ -99,7 +99,7 @@ class SeparatorClustering(object):
 
     def fake_detection(self):
         num_fake_separators = 6
-        frame_id = self.knowrob.get_object_frame_id(self.current_floor_id)
+        frame_id = self.knowrob.get_perceived_frame_id(self.current_floor_id)
         for i in range(num_fake_separators):
             for j in range(self.min_samples + 1):
                 p = PoseStamped()

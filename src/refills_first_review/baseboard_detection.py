@@ -119,6 +119,7 @@ class BaseboardDetector(object):
         self.right_color = ColorRGBA(1, .5, 0, 1)
 
     def start_listening(self):
+        self.shelves = []
         self.detector_sub = rospy.Subscriber(self.baseboard_detector_topic, TFMessage, self.cb, queue_size=10)
 
     def stop_listening(self):
@@ -162,6 +163,7 @@ class BaseboardDetector(object):
                 self.shelves.append(Shelf(number, position))
 
     def publish_as_marker(self):
+        # TODO use current frame id
         ma = MarkerArray()
         for i, shelf in enumerate(self.shelves):
             if shelf.is_complete():
