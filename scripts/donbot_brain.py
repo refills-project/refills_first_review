@@ -25,6 +25,8 @@ from refills_first_review.robosherlock_wrapper import RoboSherlock
 
 # base
 # shelf id
+from refills_first_review.tfwrapper import TfWrapper
+
 FLOOR_SCANNING_OFFSET = {'x': -0.18,
                          'y': -0.92,
                          'z': np.pi}
@@ -65,6 +67,7 @@ class CRAM(object):
         self.move_base = MoveBase(enabled=True)
         self.move_arm = GiskardWrapper(enabled=True)
         self.map_frame_id = rospy.get_param('~/map', 'map')
+        self.tf = TfWrapper()
 
     def start(self):
         self._as.start()
@@ -82,6 +85,7 @@ class CRAM(object):
             self.move_arm.drive_pose()
             real_shelves = self.knowrob.get_shelves()
             real_shelf_keys = real_shelves.keys()
+            # TODO scan shelf system
             for shelf_id in goal.loc_id:
                 rospy.loginfo('scanning {}'.format(shelf_id))
                 # TODO hack until knowrob is integrated into mock gui
@@ -92,19 +96,6 @@ class CRAM(object):
             self._as.set_succeeded()
         except CancelledError as e:
             rospy.loginfo('preempted')
-
-    def scan_shop(self):
-        # TODO make sure that nothing is close [medium]
-        self.move_arm.drive_pose()
-        self.detect_baseboards()
-        self.move_arm.drive_pose()
-        # TODO we need a way to determine the order
-        for unofficial_shelf_id, shelf_id in enumerate(self.knowrob.get_shelves()):
-            self.unofficial_shelf_id = unofficial_shelf_id
-            rospy.loginfo('scanning shelf system \'{}\''.format(shelf_id))
-            t = time()
-            self.scan_shelf(shelf_id)
-            rospy.loginfo('scanned shelf system \'{}\' in {:.2f}s'.format(shelf_id, time() - t))
 
     def detect_baseboards(self):
         rospy.loginfo('shelf baseboard detection requires manuel mode')
@@ -119,8 +110,6 @@ class CRAM(object):
             rospy.loginfo('scan all shelf baseboard plx')
             self.robosherlock.start_baseboard_detection()
 
-
-
             cmd = raw_input('finished scanning shelf system? [y]')
             if cmd == '1337':
                 rospy.logwarn('skipping baseboard detection')
@@ -128,8 +117,9 @@ class CRAM(object):
 
             shelves = self.robosherlock.stop_baseboard_detection()
             self.knowrob.add_shelves(shelf_system_id, shelves)
-        rospy.loginfo('MAKE SURE NOTHING IS CLOSE!!!!11elf')
-        cmd = raw_input('rdy? [y]')
+        self.move_arm.drive_pose()
+        # rospy.loginfo('MAKE SURE NOTHING IS CLOSE!!!!11elf')
+        # cmd = raw_input('rdy? [y]')
 
     def scan_shelf(self, shelf_id):
         self.detect_shelf_floors(shelf_id)
@@ -163,7 +153,7 @@ class CRAM(object):
         self.move_in_front_of_shelf(shelf_id)
 
         if not self.knowrob.is_hanging_foor(floor_id):
-            self.robosherlock.start_separator_detection(shelf_id, floor_id)
+            self.robosherlock.start_separator_detection(floor_id)
         self.robosherlock.start_barcode_detection(shelf_id, floor_id)
 
         try:
@@ -210,13 +200,15 @@ class CRAM(object):
             self.move_base.move_relative([self.knowrob.get_floor_width(), 0, 0])
         else:
             frame_id = self.knowrob.get_perceived_frame_id(shelf_id)
+            gripper_in_base = self.tf.lookup_transform(self.move_arm.root, self.move_arm.tip)
             for i, facing_pose in enumerate(reversed(sorted(facings, key=lambda x: x.pose.position.x))):
                 self.move_base.move_absolute_xyz(frame_id,
-                                                 FLOOR_SCANNING_OFFSET['x'] + facing_pose.pose.position.x,
+                                                 gripper_in_base.pose.position.x + facing_pose.pose.position.x,
                                                  FLOOR_SCANNING_OFFSET['y'],
                                                  FLOOR_SCANNING_OFFSET['z'])
                 count = self.robosherlock.count()
                 # TODO get name of object in facing [medium]
+                rospy.sleep(0.5)
                 rospy.loginfo('counted {} {} times'.format('muh', count))
 
     def STOP(self):

@@ -65,6 +65,9 @@ class KnowRob(object):
         ros_pose.pose.orientation = Quaternion(*query_result[3])
         return ros_pose
 
+    def is_shelf_system(self, id):
+        q = 'rdfs_individual_of(\'{}\', {})'.format()
+
     def add_shelf_system(self):
         q = 'belief_new_object({}:\'{}\', R)'.format(DM_MARKET, SHELF_SYSTEM)
         shelf_system_id = self.prolog_query(q)[0]['R'].replace('\'', '')
@@ -90,7 +93,6 @@ class KnowRob(object):
         return True
 
     def get_objects(self, type):
-        # TODO rdfs or owl?
         # TODO failure handling
         objects = OrderedDict()
         q = 'rdfs_individual_of(R, {}:\'{}\').'.format(DM_MARKET, type)

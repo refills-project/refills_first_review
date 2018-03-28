@@ -43,31 +43,24 @@ class RoboSherlock(object):
         self.tf = TfWrapper()
         rospy.logwarn('robosherlock not fully integrated')
 
-    def start_separator_detection(self, shelf_id, floor_id):
-        # TODO
-        self.separator_detection.start_listening(shelf_id, floor_id)
+    def start_separator_detection(self, floor_id):
+        self.separator_detection.start_listening(floor_id)
 
     def stop_separator_detection(self):
-        # TODO
         return self.separator_detection.stop_listening()
 
     def start_baseboard_detection(self):
-        # TODO
         self.baseboard_detection.start_listening()
 
     def stop_baseboard_detection(self):
-        # TODO
         return self.baseboard_detection.stop_listening()
 
     def start_barcode_detection(self, shelf_id, floor_id):
-        # TODO
         self.barcode_detection.start_listening(shelf_id, floor_id)
         pass
 
     def stop_barcode_detection(self):
-        # TODO
         return self.barcode_detection.stop_listening()
-        # return {}
 
     def detect_floors(self, shelf_id):
         # TODO

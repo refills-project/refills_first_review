@@ -32,14 +32,13 @@ class SeparatorClustering(object):
         self.min_samples = 2
         self.max_dist = 0.02
 
-    def start_listening(self, shelf_id, floor_id):
-        self.current_shelf_id = shelf_id
+    def start_listening(self, floor_id):
         self.current_floor_id = floor_id
 
         self.detections = []
         self.separator_sub = rospy.Subscriber(self.separator_detector_topic, SeparatorArray, self.separator_cb,
                                               queue_size=10)
-        self.marker_ns = 'separator_{}_{}'.format(shelf_id, floor_id)
+        self.marker_ns = 'separator_{}'.format(floor_id)
 
     def stop_listening(self):
         self.separator_sub.unregister()
@@ -80,22 +79,6 @@ class SeparatorClustering(object):
 
     def cluster_to_separator(self, separator_cluster):
         return separator_cluster.mean(axis=0)
-
-    # def publish_as_marker(self, separators):
-    #     ma = MarkerArray()
-    #     for i, separator in enumerate(separators):
-    #         m = Marker()
-    #         m.header = separator.header
-    #         m.ns = self.marker_ns
-    #         m.id = i
-    #         m.type = Marker.CUBE
-    #         m.action = Marker.ADD
-    #         m.pose = deepcopy(separator.pose)
-    #         m.pose.position.y += self.separator_maker_scale.y / 2
-    #         m.scale = self.separator_maker_scale
-    #         m.color = self.separator_maker_color
-    #         ma.markers.append(m)
-    #     self.marker_pub.publish(ma)
 
     def fake_detection(self):
         num_fake_separators = 6
