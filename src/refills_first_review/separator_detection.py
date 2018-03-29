@@ -17,17 +17,15 @@ from refills_first_review.tfwrapper import TfWrapper
 
 
 class SeparatorClustering(object):
-    def __init__(self, knowrob):
+    def __init__(self, knowrob, topic='/separator_marker_detector_node/data_out'):
         self.knowrob = knowrob
         # TODO use paramserver [low]
         self.tf = TfWrapper(6)
         self.marker_pub = rospy.Publisher('visualization_marker_array', MarkerArray, queue_size=10)
         self.detections = []
         self.map_frame_id = 'map'
-        self.separator_detector_topic = '/separator_marker_detector_node/data_out'
+        self.separator_detector_topic = topic
         self.separator_maker_color = ColorRGBA(.8, .8, .8, .8)
-        # TODO change marker shape [low]
-        # TODO return correct number of separators in fake mode [low]
         self.separator_maker_scale = Vector3(.01, .5, .05)
         self.min_samples = 2
         self.max_dist = 0.02

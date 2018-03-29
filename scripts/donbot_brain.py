@@ -2,11 +2,9 @@
 
 from __future__ import print_function, division
 
-import threading
 import traceback
 from simplejson import OrderedDict
 import numpy as np
-from time import time
 
 import rospy
 from actionlib import SimpleActionServer
@@ -64,8 +62,8 @@ class CRAM(object):
         self._as.register_preempt_callback(self.preempt_cb)
         self.knowrob = KnowRob()
         self.robosherlock = RoboSherlock(self.knowrob)
-        self.move_base = MoveBase(enabled=True)
-        self.move_arm = GiskardWrapper(enabled=True)
+        self.move_base = MoveBase(enabled=True, knowrob=self.knowrob)
+        self.move_arm = GiskardWrapper(enabled=True, knowrob=self.knowrob)
         self.map_frame_id = rospy.get_param('~/map', 'map')
         self.tf = TfWrapper()
 
@@ -83,16 +81,13 @@ class CRAM(object):
             self._as.set_aborted('only complete scans are supported')
         try:
             self.move_arm.drive_pose()
-            real_shelves = self.knowrob.get_shelves()
-            real_shelf_keys = real_shelves.keys()
             # TODO scan shelf system
-            for shelf_id in goal.loc_id:
+            for i, shelf_id in enumerate(goal.loc_id):
                 rospy.loginfo('scanning {}'.format(shelf_id))
-                # TODO hack until knowrob is integrated into mock gui
-                self.unofficial_shelf_id = int(shelf_id[-1])
-                real_shelf_id = real_shelf_keys[self.unofficial_shelf_id]
-                self.scan_shelf(real_shelf_id)
+                self.scan_shelf(shelf_id)
                 # TODO feedback
+            self.knowrob.save_beliefstate()
+            self.knowrob.save_action_graph()
             self._as.set_succeeded()
         except CancelledError as e:
             rospy.loginfo('preempted')
@@ -117,11 +112,13 @@ class CRAM(object):
 
             shelves = self.robosherlock.stop_baseboard_detection()
             self.knowrob.add_shelves(shelf_system_id, shelves)
-        self.move_arm.drive_pose()
-        # rospy.loginfo('MAKE SURE NOTHING IS CLOSE!!!!11elf')
-        # cmd = raw_input('rdy? [y]')
+        rospy.loginfo('MAKE SURE NOTHING IS CLOSE!!!!11elf')
+        cmd = raw_input('rdy? [y]')
+        if cmd == 'y':
+            self.move_arm.drive_pose()
 
     def scan_shelf(self, shelf_id):
+        self.knowrob.start_scanning_action()
         self.detect_shelf_floors(shelf_id)
         for shelf_floor_id in self.knowrob.get_floor_ids(shelf_id):
             if not self.knowrob.is_floor_too_high(shelf_floor_id):
@@ -129,6 +126,7 @@ class CRAM(object):
                 if not self.knowrob.is_hanging_foor(shelf_floor_id):
                     self.count_floor(shelf_id, shelf_floor_id)
         self.move_arm.drive_pose()
+        self.knowrob.finish_action()
 
     def detect_shelf_floors(self, shelf_id):
         self.move_base.move_absolute_xyz(self.knowrob.get_perceived_frame_id(shelf_id),
@@ -142,7 +140,7 @@ class CRAM(object):
         self.move_arm.floor_detection_pose2()
         if self.robosherlock.robosherlock:
             rospy.sleep(10)
-        floor_heights = self.robosherlock.stop_floor_detection(shelf_id, self.unofficial_shelf_id)
+        floor_heights = self.robosherlock.stop_floor_detection(shelf_id)
         self.knowrob.add_shelf_floors(shelf_id, floor_heights)
 
     def scan_floor(self, shelf_id, floor_id):
@@ -161,11 +159,12 @@ class CRAM(object):
         except TimeoutError as e:
             self.move_base.STOP()
 
+        barcodes = self.robosherlock.stop_barcode_detection()
         if not self.knowrob.is_hanging_foor(floor_id):
             separators = self.robosherlock.stop_separator_detection()
-            self.knowrob.add_separators(shelf_id, floor_id, separators)
-        barcodes = self.robosherlock.stop_barcode_detection()
-        self.knowrob.add_barcodes(floor_id, barcodes)
+            self.knowrob.add_separators_and_barcodes(floor_id, separators, barcodes)
+        else:
+            self.knowrob.add_barcodes(floor_id, barcodes)
 
     def set_floor_scan_pose(self, shelf_id, floor_id):
         floor_position = self.knowrob.get_floor_position(floor_id)

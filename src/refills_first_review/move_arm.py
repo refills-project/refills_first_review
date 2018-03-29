@@ -7,9 +7,10 @@ from std_msgs.msg import Header
 
 
 class GiskardWrapper(object):
-    def __init__(self, giskard_action_name='/qp_controller/command', enabled=True):
+    def __init__(self, giskard_action_name='/qp_controller/command', enabled=True, knowrob=None):
         self.move_time_limit = 25
         self.enabled = enabled
+        self.knowrob = knowrob
         self.client = SimpleActionClient(giskard_action_name, ControllerListAction)
         rospy.loginfo('connecting to {}'.format(giskard_action_name))
         self.client.wait_for_server()
@@ -106,9 +107,15 @@ class GiskardWrapper(object):
 
             self.send_goal(goal)
 
-    def send_goal(self, goal):
+    def send_goal(self, goal, action_type='http://knowrob.org/kb/knowrob_common.owl#ArmMovement'):
+        if self.knowrob is not None:
+            self.knowrob.start_movement(action_type)
         self.client.send_goal(goal)
         result = self.client.wait_for_result(rospy.Duration(self.move_time_limit))
+        if self.knowrob is not None:
+            self.knowrob.finish_action()
+        if not result:
+            raise Exception('arm movement failed')
         # print('finished in 10s?: {}'.format(result))
 
     def floor_detection_pose(self):

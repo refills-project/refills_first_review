@@ -21,6 +21,7 @@ FLOORS = {
     3: [[0, 0, 0.15], [0, 0.1, 0.43], [0, 0.1, 0.68], [0, 0.1, 0.93], [0, 0.1, 1.18], [0, 0.1, 1.43]],
 }
 
+MAP = 'map'
 
 class RoboSherlock(object):
     def __init__(self, knowrob):
@@ -78,7 +79,7 @@ class RoboSherlock(object):
             req.query = json.dumps(q)
             self.robosherlock_service.call(req)
 
-    def stop_floor_detection(self, shelf_id, unofficial_shelf_id=0):
+    def stop_floor_detection(self, shelf_id):
         if self.robosherlock:
             req = RSQueryServiceRequest()
             q = {'scan':
@@ -100,7 +101,8 @@ class RoboSherlock(object):
             floors = [FLOORS[shelf_id][0]] + floors
             print('detected shelfs at heights: {}'.format(floors))
         else:
-            floors = FLOORS[unofficial_shelf_id]
+            shelf_pose = self.tf.lookup_transform(MAP, self.knowrob.get_perceived_frame_id(shelf_id))
+            floors = FLOORS[int(shelf_pose.pose.position.x)]
         return floors
 
     def count(self):
