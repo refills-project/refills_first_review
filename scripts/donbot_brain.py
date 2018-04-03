@@ -152,6 +152,8 @@ class CRAM(object):
 
         if not self.knowrob.is_hanging_foor(floor_id):
             self.robosherlock.start_separator_detection(floor_id)
+        else:
+            self.robosherlock.start_mounting_bar_detection(floor_id)
         self.robosherlock.start_barcode_detection(shelf_id, floor_id)
 
         try:
@@ -164,7 +166,8 @@ class CRAM(object):
             separators = self.robosherlock.stop_separator_detection()
             self.knowrob.add_separators_and_barcodes(floor_id, separators, barcodes)
         else:
-            self.knowrob.add_barcodes(floor_id, barcodes)
+            mounting_bars = self.robosherlock.stop_separator_detection()
+            self.knowrob.add_mounting_bars_and_barcodes(floor_id, mounting_bars, barcodes)
 
     def set_floor_scan_pose(self, shelf_id, floor_id):
         floor_position = self.knowrob.get_floor_position(floor_id)
@@ -200,15 +203,17 @@ class CRAM(object):
         else:
             frame_id = self.knowrob.get_perceived_frame_id(shelf_id)
             gripper_in_base = self.tf.lookup_transform(self.move_arm.root, self.move_arm.tip)
-            for i, facing_pose in enumerate(reversed(sorted(facings, key=lambda x: x.pose.position.x))):
+            for i, (facing_id, facing_pose) in enumerate(reversed(sorted(facings.items(), key=lambda (k,v): v.pose.position.x))):
                 self.move_base.move_absolute_xyz(frame_id,
                                                  gripper_in_base.pose.position.x + facing_pose.pose.position.x,
                                                  FLOOR_SCANNING_OFFSET['y'],
                                                  FLOOR_SCANNING_OFFSET['z'])
                 count = self.robosherlock.count()
+                for j in range(count):
+                    self.knowrob.add_object(facing_id)
                 # TODO get name of object in facing [medium]
                 rospy.sleep(0.5)
-                rospy.loginfo('counted {} {} times'.format('muh', count))
+                rospy.loginfo('counted {} objects in facing {}'.format(count, facing_id))
 
     def STOP(self):
         self.move_base.STOP()

@@ -17,8 +17,9 @@ SHELF_METER = '{}:\'DMShelfFrameFrontStore\''.format(DM_MARKET)
 SHELF_FLOOR_STANDING = '{}:\'DMShelfLayer4TilesFront\''.format(DM_MARKET)
 SHELF_FLOOR_MOUNTING = '{}:\'DMShelfLayerMountingFront\''.format(DM_MARKET)
 SEPARATOR = '{}:\'DMShelfSeparator4Tiles\''.format(DM_MARKET)
-BARCODE = '{}:\'DMShelfLabel\''.format(DM_MARKET)
 MOUNTING_BAR = '{}:\'DMShelfMountingBar\''.format(DM_MARKET)
+BARCODE = '{}:\'DMShelfLabel\''.format(DM_MARKET)
+PERCEPTION_AFFORDANCE = '{}:\'DMShelfPerceptionAffordance\''.format(DM_MARKET)
 
 
 class ActionGraph(object):
@@ -113,7 +114,8 @@ class KnowRob(object):
         for name, pose in shelves.items():
             q = 'belief_new_object({}, ID), ' \
                 'rdf_assert(\'{}\', knowrob:properPhysicalParts, ID),' \
-                'object_affordance_static_transform(ID, A, [_,_,T,R])'.format(SHELF_METER, shelf_system_id)
+                'object_affordance_static_transform(ID, A, [_,_,T,R]),' \
+                'rdfs_individual_of(A, {})'.format(SHELF_METER, shelf_system_id, PERCEPTION_AFFORDANCE)
             solutions = self.prolog_query(q)[0]
             pose.pose.position.x -= solutions['T'][0]
             pose.pose.position.y -= solutions['T'][1]
@@ -145,7 +147,9 @@ class KnowRob(object):
 
     def get_perceived_frame_id(self, object_id):
         # TODO there has to be a better way
-        q = 'object_affordance_static_transform(\'{}\', A, _), object_frame_name(A, R).'.format(object_id)
+        q = 'object_affordance_static_transform(\'{}\', A, _), ' \
+            'object_frame_name(A, R),' \
+            'rdfs_individual_of(A, {})'.format(object_id, PERCEPTION_AFFORDANCE)
         return self.prolog_query(q)[0]['R'].replace('\'', '')
 
     def get_object_frame_id(self, object_id):
@@ -157,20 +161,21 @@ class KnowRob(object):
         perceived_frame_id = self.get_perceived_frame_id(shelf_id)
         frame_id = self.get_object_frame_id(shelf_id)
         for position in floors:
-            type = SHELF_FLOOR_STANDING if position[1] < 0.13 else SHELF_FLOOR_MOUNTING
-            p = PoseStamped()
-            p.header.frame_id = perceived_frame_id
-            p.pose.position = Point(*position)
-            p.pose.orientation.w = 1
-            p = self.tf.transform_pose(frame_id, p)
-            q = 'belief_new_object({}, FloorId), ' \
-                'rdf_assert(\'{}\', knowrob:properPhysicalParts, FloorId),' \
-                'object_affordance_static_transform(FloorId, _, [_,_,T,R])'.format(type, shelf_id)
-            solutions = self.prolog_query(q)[0]
-            p.pose.position.x -= solutions['T'][0]
-            p.pose.position.y -= solutions['T'][1]
-            p.pose.position.z -= solutions['T'][2]
-            q = 'belief_at_update({}, {})'.format(solutions['FloorId'], self.pose_to_prolog(p))
+            layer_type = SHELF_FLOOR_STANDING if position[1] < 0.13 else SHELF_FLOOR_MOUNTING
+            # p = PoseStamped()
+            # p.header.frame_id = perceived_frame_id
+            # p.pose.position = Point(*position)
+            # p.pose.orientation.w = 1
+            # p = self.tf.transform_pose(frame_id, p)
+            q = 'belief_shelf_part_at(\'{}\', {}, {}, R)'.format(shelf_id, layer_type, position[-1])
+            # q = 'belief_new_object({}, FloorId), ' \
+            #     'rdf_assert(\'{}\', knowrob:properPhysicalParts, FloorId),' \
+            #     'object_affordance_static_transform(FloorId, _, [_,_,T,R])'.format(type, shelf_id)
+            # solutions = self.prolog_query(q)[0]
+            # p.pose.position.x -= solutions['T'][0]
+            # p.pose.position.y -= solutions['T'][1]
+            # p.pose.position.z -= solutions['T'][2]
+            # q = 'belief_at_update({}, {})'.format(solutions['FloorId'], self.pose_to_prolog(p))
             self.prolog_query(q)
         return True
 
@@ -211,21 +216,31 @@ class KnowRob(object):
 
     def add_separators(self, floor_id, separators):
         for p in separators:
-            q = 'shelf_layer_spawn(\'{}\', {}, {}, _)'.format(floor_id, SEPARATOR, p.pose.position.x)
+            q = 'belief_shelf_part_at(\'{}\', {}, {}, _)'.format(floor_id, SEPARATOR, p.pose.position.x)
             solutions = self.prolog_query(q)
         return True
 
     def add_barcodes(self, floor_id, barcodes):
         for barcode, p in barcodes.items():
-            q = 'shelf_layer_spawn_label(\'{}\', {}, dan(\'{}\'), {}, _)'.format(floor_id, BARCODE,
+            q = 'belief_shelf_barcode_at(\'{}\', {}, dan(\'{}\'), {}, _)'.format(floor_id, BARCODE,
                                                                                  barcode, p.pose.position.x)
             solutions = self.prolog_query(q)
 
     def add_separators_and_barcodes(self, floor_id, separators, barcodes):
-        separator_q = ','.join(['shelf_layer_spawn(\'{}\', {}, {}, _)'.format(floor_id, SEPARATOR, p.pose.position.x)
+        separator_q = ','.join(['belief_shelf_part_at(\'{}\', {}, norm({}), _)'.format(floor_id, SEPARATOR, p.pose.position.x)
                                 for p in separators])
 
-        barcode_q = ','.join(['shelf_layer_spawn_label(\'{}\', {}, dan(\'{}\'), {}, _)'.format(floor_id, BARCODE,
+        barcode_q = ','.join(['belief_shelf_barcode_at(\'{}\', {}, dan(\'{}\'), norm({}), _)'.format(floor_id, BARCODE,
+                                                                                               barcode,
+                                                                                               p.pose.position.x)
+                              for barcode, p in barcodes.items()])
+        self.prolog_query('{},{}'.format(separator_q, barcode_q))
+
+    def add_mounting_bars_and_barcodes(self, floor_id, separators, barcodes):
+        separator_q = ','.join(['belief_shelf_part_at(\'{}\', {}, {}, _)'.format(floor_id, MOUNTING_BAR, p.pose.position.x)
+                                for p in separators])
+
+        barcode_q = ','.join(['belief_shelf_barcode_at(\'{}\', {}, dan(\'{}\'), {}, _)'.format(floor_id, BARCODE,
                                                                                                barcode,
                                                                                                p.pose.position.x)
                               for barcode, p in barcodes.items()])
@@ -234,12 +249,16 @@ class KnowRob(object):
     def get_facings(self, floor_id):
         q = 'findall(F, shelf_facing(\'{}\', F), R).'.format(floor_id)
         solutions = self.prolog_query(q)[0]
-        facings = []
+        facings = {}
         for facing_id in solutions['R']:
             facing_pose = self.tf.lookup_transform(self.get_perceived_frame_id(floor_id),
                                                    self.get_object_frame_id(facing_id))
-            facings.append(facing_pose)
+            facings[facing_id] = facing_pose
         return facings
+
+    def add_object(self, facing_id):
+        q = 'product_spawn_front_to_back(\'{}\', ObjId)'.format(facing_id)
+        solutions = self.prolog_query(q)
 
     def save_beliefstate(self):
         path = '{}/data/beliefstate.owl'.format(RosPack().get_path('refills_first_review'))

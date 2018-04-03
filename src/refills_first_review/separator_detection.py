@@ -17,26 +17,30 @@ from refills_first_review.tfwrapper import TfWrapper
 
 
 class SeparatorClustering(object):
-    def __init__(self, knowrob, topic='/separator_marker_detector_node/data_out'):
+    def __init__(self, knowrob):
         self.knowrob = knowrob
         # TODO use paramserver [low]
+        # TODO add separator at each end
         self.tf = TfWrapper(6)
         self.marker_pub = rospy.Publisher('visualization_marker_array', MarkerArray, queue_size=10)
         self.detections = []
         self.map_frame_id = 'map'
-        self.separator_detector_topic = topic
         self.separator_maker_color = ColorRGBA(.8, .8, .8, .8)
         self.separator_maker_scale = Vector3(.01, .5, .05)
         self.min_samples = 2
         self.max_dist = 0.02
 
-    def start_listening(self, floor_id):
+    def start_listening_separators(self, floor_id, topic='/separator_marker_detector_node/data_out'):
+        # self.topic = topic
         self.current_floor_id = floor_id
 
         self.detections = []
-        self.separator_sub = rospy.Subscriber(self.separator_detector_topic, SeparatorArray, self.separator_cb,
+        self.separator_sub = rospy.Subscriber(topic, SeparatorArray, self.separator_cb,
                                               queue_size=10)
         self.marker_ns = 'separator_{}'.format(floor_id)
+
+    def start_listening_mounting_bars(self, floor_id):
+        self.start_listening_separators(floor_id, topic='/muh')
 
     def stop_listening(self):
         self.separator_sub.unregister()

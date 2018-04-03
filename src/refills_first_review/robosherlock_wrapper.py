@@ -45,7 +45,10 @@ class RoboSherlock(object):
         rospy.logwarn('robosherlock not fully integrated')
 
     def start_separator_detection(self, floor_id):
-        self.separator_detection.start_listening(floor_id)
+        self.separator_detection.start_listening_separators(floor_id)
+
+    def start_mounting_bar_detection(self, floor_id):
+        self.separator_detection.start_listening_mounting_bars(floor_id)
 
     def stop_separator_detection(self):
         return self.separator_detection.stop_listening()
