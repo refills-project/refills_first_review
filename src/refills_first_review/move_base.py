@@ -11,9 +11,10 @@ from tf.transformations import quaternion_about_axis
 
 
 class MoveBase(object):
-    def __init__(self, move_base_action_name='nav_pcontroller/move_base', enabled=False):
+    def __init__(self, move_base_action_name='nav_pcontroller/move_base', enabled=False, knowrob=None):
         # TODO use paramserver [low]
         self.enabled = enabled
+        self.knowrob = knowrob
         self.client = actionlib.SimpleActionClient(move_base_action_name, MoveBaseAction)
         rospy.loginfo('connecting to {} ...'.format(move_base_action_name))
         self.client.wait_for_server()
@@ -30,15 +31,19 @@ class MoveBase(object):
         self.timeout = 30
         self.dist_to_shelfs = 1.4
 
-    def move_absolute(self, target_pose):
+    def move_absolute(self, target_pose, action_type='http://knowrob.org/kb/motions.owl#LegMovement'):
         if self.enabled:
             self.goal_pub.publish(target_pose)
             goal = MoveBaseGoal()
             goal.target_pose = target_pose
+            if self.knowrob is not None:
+                self.knowrob.start_base_movement(1)
             self.client.send_goal(goal)
             wait_result = self.client.wait_for_result(rospy.Duration(self.timeout))
             result = self.client.get_result()
             state = self.client.get_state()
+            if self.knowrob is not None:
+                self.knowrob.finish_action()
             if not wait_result or state != GoalStatus.SUCCEEDED:
                 print('movement did not finish in time')
                 # self.STOP()

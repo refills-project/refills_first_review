@@ -3,7 +3,7 @@ import rospy
 from geometry_msgs.msg import PoseStamped, Transform, TransformStamped
 from tf2_geometry_msgs import do_transform_pose
 from tf2_py._tf2 import ExtrapolationException
-from tf2_ros import Buffer, TransformListener
+from tf2_ros import Buffer, TransformListener, StaticTransformBroadcaster
 from multiprocessing import Lock
 
 
@@ -11,6 +11,7 @@ class TfWrapper(object):
     def __init__(self, buffer_size=2):
         self.tfBuffer = Buffer(rospy.Duration(buffer_size))
         self.tf_listener = TransformListener(self.tfBuffer)
+        self.tf_static = StaticTransformBroadcaster()
         self.tf_frequency = rospy.Duration(1.0)
         self.broadcasting_frames = []
         self.broadcasting_frames_lock = Lock()
@@ -21,7 +22,7 @@ class TfWrapper(object):
             transform = self.tfBuffer.lookup_transform(target_frame,
                                                        pose.header.frame_id,  # source frame
                                                        pose.header.stamp,
-                                                       rospy.Duration(1.0))
+                                                       rospy.Duration(2.0))
             new_pose = do_transform_pose(pose, transform)
             return new_pose
         except ExtrapolationException as e:
@@ -49,4 +50,13 @@ class TfWrapper(object):
     def broadcasting_cb(self, data):
         with self.broadcasting_frames_lock:
             for frame in self.broadcasting_frames:
+                frame.header.stamp = rospy.get_rostime()
                 self.tf_broadcaster.sendTransformMessage(frame)
+
+    def broadcast_static_frame(self, name, pose_stamped):
+        frame = TransformStamped()
+        frame.header = pose_stamped.header
+        frame.child_frame_id = name
+        frame.transform.translation = pose_stamped.pose.position
+        frame.transform.rotation = pose_stamped.pose.orientation
+        self.tf_static.sendTransform(frame)

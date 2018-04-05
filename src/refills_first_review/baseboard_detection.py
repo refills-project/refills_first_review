@@ -11,7 +11,7 @@ from collections import defaultdict
 from geometry_msgs.msg import Point, Vector3, PoseStamped, Quaternion, Pose
 from rospy import ROSException
 from std_msgs.msg import ColorRGBA, Header
-from tf.transformations import quaternion_from_matrix, quaternion_from_euler
+from tf.transformations import quaternion_from_matrix, quaternion_from_euler, quaternion_about_axis
 from tf2_msgs.msg import TFMessage
 from visualization_msgs.msg import Marker, MarkerArray
 
@@ -24,7 +24,7 @@ class Shelf(object):
     def __init__(self, number, map_position):
         self.complete = False
         self.id = self.id_from_number(number)
-        rospy.loginfo('added shelf {}'.format(self.id))
+        rospy.loginfo('added shelf system {}'.format(self.id))
         self.left_measurements = []
         self.right_measurements = []
         self.add_measurement(number, map_position)
@@ -52,7 +52,7 @@ class Shelf(object):
     def is_complete(self):
         if not self.complete and len(self.left_measurements) > 0 and len(self.right_measurements) > 0:
             self.complete = True
-            rospy.loginfo('shelf {} complete'.format(self.id))
+            rospy.loginfo('shelf system {} complete'.format(self.id))
         return self.complete
 
     def get_left(self):
@@ -82,11 +82,11 @@ class Shelf(object):
     def get_orientation(self):
         left = self.get_left()
         right = self.get_right()
-        y = left - right
-        y = y / np.linalg.norm(y)
-        z = [0, 0, 1]
-        x = np.cross(y, z)
+        x = right - left
         x = x / np.linalg.norm(x)
+        z = [0, 0, 1]
+        y = -np.cross(x, z)
+        y = y / np.linalg.norm(y)
         return quaternion_from_matrix([
             [x[0], x[1], x[2], 0],
             [y[0], y[1], y[2], 0],
@@ -95,7 +95,7 @@ class Shelf(object):
         ])
 
     def get_name(self):
-        return 'shelf{}'.format(self.id)
+        return 'shelf_system_{}'.format(self.id)
 
 
 class BaseboardDetector(object):
@@ -119,6 +119,7 @@ class BaseboardDetector(object):
         self.right_color = ColorRGBA(1, .5, 0, 1)
 
     def start_listening(self):
+        self.shelves = []
         self.detector_sub = rospy.Subscriber(self.baseboard_detector_topic, TFMessage, self.cb, queue_size=10)
 
     def stop_listening(self):
@@ -128,20 +129,20 @@ class BaseboardDetector(object):
 
     def detect_fake_shelves(self, ids):
         if '0' in ids:
-            s1 = Shelf(20, [-0.05, 0.515, 0])
-            s1.add_measurement(21, [-0.95, 0.515, 0])
+            s1 = Shelf(20, [0.7, -0.64, 0])
+            s1.add_measurement(21, [1.59, -0.64, 0])
             self.shelves.append(s1)
         if '1' in ids:
-            s2 = Shelf(22, [-1.05, 0.515, 0])
-            s2.add_measurement(23, [-1.95, 0.515, 0])
+            s2 = Shelf(22, [1.7, -0.64, 0])
+            s2.add_measurement(23, [2.59, -0.64, 0])
             self.shelves.append(s2)
         if '2' in ids:
-            s3 = Shelf(24, [-2.05, 0.515, 0])
-            s3.add_measurement(25, [-2.95, 0.515, 0])
+            s3 = Shelf(24, [2.7, -0.64, 0])
+            s3.add_measurement(25, [3.59, -0.64, 0])
             self.shelves.append(s3)
         if '3' in ids:
-            s4 = Shelf(26, [-3.05, 0.515, 0])
-            s4.add_measurement(27, [-3.95, 0.515, 0])
+            s4 = Shelf(26, [3.7, -0.64, 0])
+            s4.add_measurement(27, [4.59, -0.64, 0])
             self.shelves.append(s4)
 
     def cb(self, data):
@@ -162,6 +163,7 @@ class BaseboardDetector(object):
                 self.shelves.append(Shelf(number, position))
 
     def publish_as_marker(self):
+        # TODO use current frame id
         ma = MarkerArray()
         for i, shelf in enumerate(self.shelves):
             if shelf.is_complete():
@@ -170,9 +172,9 @@ class BaseboardDetector(object):
                 m.header.frame_id = shelf.get_name()
                 m.ns = self.marker_ns
                 m.id = i
-                m.pose.orientation.w = 0
+                m.pose.orientation = Quaternion(*quaternion_about_axis(-np.pi/2, [0,0,1]))
                 if shelf.id == 0:
-                    m.pose.position.x += 0.07
+                    m.pose.position.y -= 0.07
                 m.action = Marker.ADD
                 m.type = Marker.MESH_RESOURCE
                 m.mesh_resource = 'package://iai_shelves/meshes/Shelf_{}.dae'.format(shelf.id)
@@ -190,7 +192,7 @@ class BaseboardDetector(object):
                 m.pose.position = Point(*shelf.get_left())
                 m.pose.position.z = 0.03
                 m.pose.orientation = Quaternion(*shelf.get_orientation())
-                m.scale = Vector3(.03, .05, .05)
+                m.scale = Vector3(.05, .03, .05)
                 m.color = self.left_color
                 ma.markers.append(m)
                 # right
@@ -209,6 +211,7 @@ if __name__ == '__main__':
     d.start_listening()
     print('baseboard detection test started')
     cmd = raw_input('stop? [enter]')
+    d.detect_fake_shelves(cmd)
     print('baseboard detection test ended')
     print(d.stop_listening())
     rospy.sleep(.5)
