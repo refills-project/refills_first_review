@@ -36,12 +36,14 @@ class MoveBase(object):
             self.goal_pub.publish(target_pose)
             goal = MoveBaseGoal()
             goal.target_pose = target_pose
-            # if self.knowrob is not None:
-            #     self.knowrob.starb
+            if self.knowrob is not None:
+                self.knowrob.start_base_movement(1)
             self.client.send_goal(goal)
             wait_result = self.client.wait_for_result(rospy.Duration(self.timeout))
             result = self.client.get_result()
             state = self.client.get_state()
+            if self.knowrob is not None:
+                self.knowrob.finish_action()
             if not wait_result or state != GoalStatus.SUCCEEDED:
                 print('movement did not finish in time')
                 # self.STOP()

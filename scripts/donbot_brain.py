@@ -3,7 +3,6 @@
 from __future__ import print_function, division
 
 import traceback
-from simplejson import OrderedDict
 import numpy as np
 
 import rospy
@@ -89,7 +88,8 @@ class CRAM(object):
             self.knowrob.save_beliefstate()
             self.knowrob.save_action_graph()
             self._as.set_succeeded()
-        except:
+        except Exception as e:
+            traceback.print_exc()
             rospy.loginfo('preempted')
 
     def detect_baseboards(self):
