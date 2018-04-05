@@ -127,7 +127,8 @@ class BarcodeDetector(object):
                 m.scale = Vector3(1, 1, 1)
                 m.color = ColorRGBA(0, 0, 0, 0)
                 m.mesh_use_embedded_materials = True
-            ma.markers.append(m)
+            if mesh_path != '':
+                ma.markers.append(m)
 
             # text
             m = Marker()

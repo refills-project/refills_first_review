@@ -108,9 +108,9 @@ class RoboSherlock(object):
             floors = FLOORS[int(shelf_pose.pose.position.x)]
         return floors
 
-    def count(self):
+    def count(self, left_separator, right_separator):
         # TODO
-        return int(np.random.random() * 4)
+        return int(np.random.random() * 4)+1
 
 
 if __name__ == '__main__':
