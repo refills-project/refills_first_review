@@ -11,7 +11,6 @@ from actionlib import SimpleActionServer
 from geometry_msgs.msg import QuaternionStamped, Quaternion, PointStamped, Point, PoseStamped, Pose
 from multiprocessing import TimeoutError
 
-from gnomevfs._gnomevfs import CancelledError
 from refills_msgs.msg import ScanningFeedback
 from refills_msgs.msg._ScanningAction import ScanningAction
 from refills_msgs.msg._ScanningGoal import ScanningGoal
@@ -74,7 +73,6 @@ class CRAM(object):
 
     def preempt_cb(self):
         self.STOP()
-        raise CancelledError('cancelled old goal')
 
     def action_cb(self, goal):
         if goal.type != ScanningGoal.COMPLETE_SCAN:
@@ -91,7 +89,7 @@ class CRAM(object):
             self.knowrob.save_beliefstate()
             self.knowrob.save_action_graph()
             self._as.set_succeeded()
-        except CancelledError as e:
+        except:
             rospy.loginfo('preempted')
 
     def detect_baseboards(self):
