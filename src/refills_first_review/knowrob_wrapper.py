@@ -56,14 +56,18 @@ class ActionGraph(object):
 
         self.last_sub_action = ActionGraph(knowrob=self.knowrob, parent_node=self, previous_node=self.last_sub_action,
                                            id=new_id)
+        return self.last_sub_action
+
     def add_sub_action(self, action_type, object_acted_on=None, goal_location=None, detected_object=None):
         return self.add_sub_thingy(action_type, 'knowrob:subAction', object_acted_on, goal_location, detected_object)
 
     def add_sub_event(self, event_type, object_acted_on=None, goal_location=None, detected_object=None):
-        return self.add_sub_thingy(event_type, 'knowrob:subEvent', object_acted_on, goal_location, detected_object)
+        # return self.add_sub_thingy(event_type, 'knowrob:subEvent', object_acted_on, goal_location, detected_object)
+        return self.add_sub_thingy(event_type, 'knowrob:subAction', object_acted_on, goal_location, detected_object)
 
     def add_sub_motion(self, motion_type, object_acted_on=None, goal_location=None, detected_object=None):
-        return self.add_sub_thingy(motion_type, 'knowrob:subMotion', object_acted_on, goal_location, detected_object)
+        # return self.add_sub_thingy(motion_type, 'knowrob:subMotion', object_acted_on, goal_location, detected_object)
+        return self.add_sub_thingy(motion_type, 'knowrob:subAction', object_acted_on, goal_location, detected_object)
 
     def __str__(self):
         return self.id.split('3')[-1]
