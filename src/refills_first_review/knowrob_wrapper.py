@@ -245,7 +245,7 @@ class KnowRob(object):
                                                                                                      barcode,
                                                                                                      p.pose.position.x)
                               for barcode, p in barcodes.items()])
-        self.prolog_query('{},{}'.format(separator_q, barcode_q))
+        self.prolog_query(','.join([separator_q, barcode_q]))
 
     def add_mounting_bars_and_barcodes(self, floor_id, separators, barcodes):
         separator_q = ','.join(
