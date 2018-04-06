@@ -121,7 +121,8 @@ class BarcodeDetector(object):
                 m.scale = self.object_scale
                 m.color = self.object_color
             else:
-                m.pose.orientation = Quaternion(*quaternion_from_euler(0, 0, np.pi / 2))
+                m.pose.orientation = Quaternion(*quaternion_from_euler(0, 0, -np.pi / 2))
+                m.pose.position.y = -0.03
                 m.type = Marker.MESH_RESOURCE
                 m.mesh_resource = self.refills_models_path + mesh_path
                 m.scale = Vector3(1, 1, 1)
