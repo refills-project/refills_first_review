@@ -25,7 +25,7 @@ from refills_first_review.robosherlock_wrapper import RoboSherlock
 from refills_first_review.tfwrapper import TfWrapper
 
 FLOOR_SCANNING_OFFSET = {'x': -0.18,
-                         'y': -0.92,
+                         'y': -0.9,
                          'z': np.pi}
 
 # shelf id
@@ -43,7 +43,7 @@ COUNTING_OFFSET = {'trans': [0.0, -0.15, -0.1],
 FLOOR_SCAN_POSE_BOTTOM = {'trans': [-.15, -.646, 0.177],
                           'rot': [0, 0.858, -0.514, 0]}
 # in base_footprint
-FLOOR_SCAN_POSE_REST = {'trans': [-.15, -.6, -0.0],
+FLOOR_SCAN_POSE_REST = {'trans': [-.15, -.65, -0.0],
                         'rot': [-0.111, -0.697, 0.699, 0.111]}
 SHELF_BASEBOARD = PoseStamped(Header(0, rospy.Time(), 'base_footprint'),
                               Pose(Point(-0.137, -0.68, 0.223),

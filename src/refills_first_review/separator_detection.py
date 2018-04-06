@@ -13,6 +13,7 @@ from std_msgs.msg import ColorRGBA
 from tf.transformations import quaternion_about_axis
 from visualization_msgs.msg import Marker, MarkerArray
 
+from refills_first_review.knowrob_wrapper import KnowRob
 from refills_first_review.tfwrapper import TfWrapper
 
 
@@ -27,7 +28,7 @@ class SeparatorClustering(object):
         self.separator_maker_color = ColorRGBA(.8, .8, .8, .8)
         self.separator_maker_scale = Vector3(.01, .5, .05)
         self.min_samples = 2
-        self.max_dist = 0.02
+        self.max_dist = 0.03
         self.hanging = False
 
     def start_listening_separators(self, floor_id, topic='/separator_marker_detector_node/data_out'):
@@ -58,7 +59,7 @@ class SeparatorClustering(object):
         frame_id = self.knowrob.get_perceived_frame_id(self.current_floor_id)
         for separator in separator_array.separators:
             p = self.tf.transform_pose(frame_id, separator.separator_pose)
-            if p is not None:
+            if p is not None and 0.03 <= p.pose.position.x and p.pose.position.x <= 0.97:
                 self.detections.append([p.pose.position.x, p.pose.position.y, p.pose.position.z])
 
     def cluster(self):
@@ -79,7 +80,7 @@ class SeparatorClustering(object):
                     separator.header.frame_id = old_frame_id
                     separator.pose.position = Point(*self.cluster_to_separator(data[clusters.labels_ == label]))
                     separator.pose.orientation = Quaternion(*quaternion_about_axis(-np.pi / 2, [0, 0, 1]))
-                    if 0 <= separator.pose.position.x and separator.pose.position.x <= 1:
+                    if 0.0 <= separator.pose.position.x and separator.pose.position.x <= 1:
                         separators.append(separator)
 
         return separators
@@ -107,12 +108,19 @@ class SeparatorClustering(object):
         for i in range(200):
             self.detections.append([0,0,0])
             self.detections.append([1,0,0])
+        for i in range(20):
+            self.detections.append([0.01,0,0])
+            self.detections.append([0.99,0,0])
+            self.detections.append([0.02,0,0])
+            self.detections.append([0.98,0,0])
+            self.detections.append([0.03,0,0])
+            self.detections.append([0.97,0,0])
 
 
 if __name__ == '__main__':
     rospy.init_node('separator_detection_test')
-    s = SeparatorClustering(True)
-    s.start_listening('shelf_system_0', '0')
+    s = SeparatorClustering(KnowRob())
+    s.start_listening_separators('http://knowrob.org/kb/dm-market.owl#DMShelfLayer4TilesFront_UNVRGYSE')
     print('separator detection test started')
     cmd = raw_input('stop? [enter]')
     print('separator detection test ended')
