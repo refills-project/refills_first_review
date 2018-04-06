@@ -42,7 +42,7 @@ FLOOR_DETECTION_OFFSET = {'x': 0.5,
 #                    }
 # in floor_id
 COUNTING_OFFSET = PoseStamped(Header(0, rospy.Time(), ''),
-                              Pose(Point(0.097, -0.37, 0.2),
+                              Pose(Point(0.097, -0.37, 0.16),
                                    Quaternion(-0.748, 0.000, -0.000, 0.664)))
 COUNTING_OFFSET2 = -0.15
 
@@ -236,18 +236,13 @@ class CRAM(object):
         goal.header.frame_id = self.knowrob.get_perceived_frame_id(floor_id)
         goal = self.tf.transform_pose(self.move_arm.root, goal)
         goal.pose.position.x = COUNTING_OFFSET2
-        # self.move_arm.set_orientation_goal(QuaternionStamped(Header(0, rospy.Time(), self.move_arm.root),
-        #                                                      Quaternion(*COUNTING_OFFSET['rot'])))
-        # self.move_arm.set_translation_goal(PointStamped(Header(0, rospy.Time(), self.move_arm.tip),
-        #                                                 Point(*COUNTING_OFFSET['trans'])))
         self.move_arm.set_and_send_cartesian_goal(goal)
-        # self.move_arm.send_cartesian_goal()
         if len(facings) == 0:
             self.move_base.move_relative([self.knowrob.get_floor_width(), 0, 0])
         else:
             frame_id = self.knowrob.get_perceived_frame_id(shelf_id)
             gripper_in_base = self.tf.lookup_transform(self.move_arm.root, self.move_arm.tip)
-            for i, (facing_id, (facing_pose, left_sep, right_sep)) in enumerate(
+            for i, (facing_id, (facing_pose, product, width, left_sep)) in enumerate(
                     reversed(sorted(facings.items(), key=lambda (k, v): v[0].pose.position.x))):
                 self.knowrob.start_shelf_layer_counting()
 
@@ -255,7 +250,8 @@ class CRAM(object):
                                                  gripper_in_base.pose.position.x + facing_pose.pose.position.x,
                                                  FLOOR_SCANNING_OFFSET['y'],
                                                  FLOOR_SCANNING_OFFSET['z'])
-                count = self.robosherlock.count(left_sep, right_sep)
+
+                count = self.robosherlock.count(product, width, left_sep, 'standing')
                 for j in range(count):
                     self.knowrob.add_object(facing_id)
                 # TODO get name of object in facing [medium]

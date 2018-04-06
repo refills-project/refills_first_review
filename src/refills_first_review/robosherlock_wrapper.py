@@ -8,6 +8,7 @@ from geometry_msgs.msg import PoseStamped
 from iai_robosherlock_msgs.srv import RSQueryService, RSQueryServiceRequest
 from rospy import ROSException
 from rospy_message_converter import message_converter
+from rospy_message_converter.message_converter import convert_ros_message_to_dictionary
 
 from refills_first_review.barcode_detection import BarcodeDetector
 from refills_first_review.baseboard_detection import BaseboardDetector
@@ -73,7 +74,7 @@ class RoboSherlock(object):
         return FLOORS[shelf_id]
 
     def start_floor_detection(self, shelf_id):
-        if self.robosherlock:
+        if self.robosherlock and False:
             req = RSQueryServiceRequest()
             q = {"scan":
                      {"type": "shelf",
@@ -83,7 +84,7 @@ class RoboSherlock(object):
             self.robosherlock_service.call(req)
 
     def stop_floor_detection(self, shelf_id):
-        if self.robosherlock:
+        if self.robosherlock and False:
             req = RSQueryServiceRequest()
             q = {'scan':
                      {'type': 'shelf',
@@ -108,9 +109,21 @@ class RoboSherlock(object):
             floors = FLOORS[int(shelf_pose.pose.position.x)]
         return floors
 
-    def count(self, left_separator, right_separator):
-        # TODO
-        return int(np.random.random() * 4)+1
+    def count(self, product, width, left_separator, facing_type='standing'):
+        ls = self.tf.lookup_transform(MAP, self.knowrob.get_perceived_frame_id(left_separator))
+        q = {'detect':{
+            'type': product,
+            'pose_stamped': convert_ros_message_to_dictionary(ls),
+            'shelf_type': facing_type,
+            'width': width
+        }}
+        print(q)
+        req = RSQueryServiceRequest()
+        req.query = json.dumps(q)
+        result = self.robosherlock_service.call(req)
+        print(result)
+        return len(result.answer)
+        # return int(np.random.random() * 4)+1
 
 
 if __name__ == '__main__':

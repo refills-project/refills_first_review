@@ -4,7 +4,7 @@ from rospkg import RosPack
 
 import rospy
 from geometry_msgs.msg import PoseStamped, Point, Quaternion
-
+import numpy as np
 from json_prolog import json_prolog
 from refills_first_review.tfwrapper import TfWrapper
 
@@ -237,6 +237,12 @@ class KnowRob(object):
             self.prolog_query(q)
 
     def add_separators_and_barcodes(self, floor_id, separators, barcodes):
+        new_floor_height = np.mean([self.tf.transform_pose(
+            self.get_perceived_frame_id(floor_id), p).pose.position.z for p in separators])
+        current_floor_pose = self.tf.lookup_transform(MAP, self.get_object_frame_id(floor_id))
+        current_floor_pose.pose.position.z += new_floor_height
+        q = 'belief_at_update(\'{}\', {})'.format(floor_id, self.pose_to_prolog(current_floor_pose))
+        self.prolog_query(q)
         separator_q = ','.join(
             ['belief_shelf_part_at(\'{}\', {}, norm({}), _)'.format(floor_id, SEPARATOR, p.pose.position.x)
              for p in separators])
@@ -259,16 +265,17 @@ class KnowRob(object):
         self.prolog_query('{},{}'.format(separator_q, barcode_q))
 
     def get_facings(self, floor_id):
-        q = 'findall([F, LF, RF], (shelf_facing(\'{}\', F), ' \
-            'rdf_has(F, shop:leftSeparator, L), object_perception_affordance_frame_name(L, LF),' \
-            'rdf_has(F, shop:rightSeparator, R), object_perception_affordance_frame_name(R, RF)),' \
+        q = 'findall([F, P, W, L], (shelf_facing(\'{}\', F), ' \
+                                'shelf_facing_product_type(F,P), ' \
+                                'comp_facingWidth(F,literal(type(_, W))), ' \
+                                'rdf_has(F, shop:leftSeparator, L)),' \
             'Facings).'.format(floor_id)
         solutions = self.prolog_query(q)[0]
         facings = {}
-        for facing_id, left_separator, right_separator in solutions['Facings']:
+        for facing_id, product, width, left_separator_id in solutions['Facings']:
             facing_pose = self.tf.lookup_transform(self.get_perceived_frame_id(floor_id),
                                                    self.get_object_frame_id(facing_id))
-            facings[facing_id] = (facing_pose, left_separator, right_separator)
+            facings[facing_id] = (facing_pose, product, float(width), left_separator_id)
         return facings
 
     def add_object(self, facing_id):
