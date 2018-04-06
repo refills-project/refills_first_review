@@ -129,8 +129,8 @@ class BaseboardDetector(object):
 
     def detect_fake_shelves(self, ids):
         if '0' in ids:
-            s1 = Shelf(20, [0.7, -0.64, 0])
-            s1.add_measurement(21, [1.59, -0.64, 0])
+            s1 = Shelf(20, [0.7, -0.59, 0])
+            s1.add_measurement(21, [1.59, -0.59, 0])
             self.shelves.append(s1)
         if '1' in ids:
             s2 = Shelf(22, [1.7, -0.64, 0])

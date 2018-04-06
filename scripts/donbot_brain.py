@@ -42,7 +42,7 @@ FLOOR_DETECTION_OFFSET = {'x': 0.5,
 #                    }
 # in floor_id
 COUNTING_OFFSET = PoseStamped(Header(0, rospy.Time(), ''),
-                              Pose(Point(0.097, -0.345, 0.2),
+                              Pose(Point(0.097, -0.37, 0.2),
                                    Quaternion(-0.748, 0.000, -0.000, 0.664)))
 COUNTING_OFFSET2 = -0.15
 
