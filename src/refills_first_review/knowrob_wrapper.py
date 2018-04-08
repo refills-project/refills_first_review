@@ -334,11 +334,17 @@ class KnowRob(object):
 
     def save_beliefstate(self):
         path = '{}/data/beliefstate.owl'.format(RosPack().get_path('refills_first_review'))
+        self.save_beliefstate(path)
+    
+    def save_beliefstate(self, path):
         q = 'rdf_save(\'{}\', belief_state)'.format(path)
         self.prolog_query(q)
 
     def save_action_graph(self):
         path = '{}/data/action_graph.owl'.format(RosPack().get_path('refills_first_review'))
+        self.save_action_graph(path)
+    
+    def save_action_graph(self, path):
         q = 'rdf_save(\'{}\', [graph(\'LoggingGraph\')])'.format(path)
         self.prolog_query(q)
 
