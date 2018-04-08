@@ -22,6 +22,10 @@ MOUNTING_BAR = '{}:\'DMShelfMountingBar\''.format(DM_MARKET)
 BARCODE = '{}:\'DMShelfLabel\''.format(DM_MARKET)
 PERCEPTION_AFFORDANCE = '{}:\'DMShelfPerceptionAffordance\''.format(DM_MARKET)
 
+OBJECT_ACTED_ON = '\'http://knowrob.org/kb/knowrob.owl#objectActedOn\''
+GOAL_LOCATION = '\'http://knowrob.org/kb/knowrob.owl#goalLocation\''
+DETECTED_OBJECT = '\'http://knowrob.org/kb/knowrob.owl#detectedObject\''
+
 
 class ActionGraph(object):
     def __init__(self, knowrob, parent_node=None, previous_node=None, id=''):
@@ -49,25 +53,42 @@ class ActionGraph(object):
                                                                   previous_action)
         return self.knowrob.prolog_query(q)[0]['R']
 
-    def add_sub_thingy(self, action_type, sub_type, object_acted_on=None, goal_location=None, detected_object=None):
+    def add_sub_thingy(self, action_type, sub_type, object_acted_on=None, goal_location=None, detected_objects=None):
         new_id = self.create_thingy(action_type)
         q = 'rdf_assert({}, {}, {}, \'LoggingGraph\')'.format(self.id, sub_type, new_id)
         self.knowrob.prolog_query(q)
+
+        if object_acted_on is not None:
+            q = 'rdf_assert({}, {}, \'{}\', \'LoggingGraph\')'.format(new_id, OBJECT_ACTED_ON, object_acted_on)
+            self.knowrob.prolog_query(q)
+        if goal_location is not None:
+            if '[' in goal_location:
+                translation = eval(goal_location.split(', ')[-2])
+                rotation = eval(goal_location.split(', ')[-1][:-1])
+                q = 'owl_instance_from_class(knowrob:\'Pose\', [pose=({}, {})], Id),' \
+                    'rdf_assert({}, {}, Id, \'LoggingGraph\')'.format(translation, rotation, new_id, GOAL_LOCATION)
+            else:
+                q = 'rdf_assert({}, {}, \'{}\', \'LoggingGraph\')'.format(new_id, GOAL_LOCATION, goal_location)
+            self.knowrob.prolog_query(q)
+        if detected_objects is not None:
+            for detected_object in detected_objects:
+                q = 'rdf_assert({}, {}, \'{}\', \'LoggingGraph\')'.format(new_id, DETECTED_OBJECT, detected_object)
+                self.knowrob.prolog_query(q)
 
         self.last_sub_action = ActionGraph(knowrob=self.knowrob, parent_node=self, previous_node=self.last_sub_action,
                                            id=new_id)
         return self.last_sub_action
 
-    def add_sub_action(self, action_type, object_acted_on=None, goal_location=None, detected_object=None):
-        return self.add_sub_thingy(action_type, 'knowrob:subAction', object_acted_on, goal_location, detected_object)
+    def add_sub_action(self, action_type, object_acted_on=None, goal_location=None, detected_objects=None):
+        return self.add_sub_thingy(action_type, 'knowrob:subAction', object_acted_on, goal_location, detected_objects)
 
-    def add_sub_event(self, event_type, object_acted_on=None, goal_location=None, detected_object=None):
-        # return self.add_sub_thingy(event_type, 'knowrob:subEvent', object_acted_on, goal_location, detected_object)
-        return self.add_sub_thingy(event_type, 'knowrob:subAction', object_acted_on, goal_location, detected_object)
+    def add_sub_event(self, event_type, object_acted_on=None, goal_location=None, detected_objects=None):
+        return self.add_sub_thingy(event_type, 'knowrob:subEvent', object_acted_on, goal_location, detected_objects)
+        # return self.add_sub_thingy(event_type, 'knowrob:subAction', object_acted_on, goal_location, detected_objects)
 
-    def add_sub_motion(self, motion_type, object_acted_on=None, goal_location=None, detected_object=None):
-        # return self.add_sub_thingy(motion_type, 'knowrob:subMotion', object_acted_on, goal_location, detected_object)
-        return self.add_sub_thingy(motion_type, 'knowrob:subAction', object_acted_on, goal_location, detected_object)
+    def add_sub_motion(self, motion_type, object_acted_on=None, goal_location=None, detected_objects=None):
+        return self.add_sub_thingy(motion_type, 'knowrob:subMotion', object_acted_on, goal_location, detected_objects)
+        # return self.add_sub_thingy(motion_type, 'knowrob:subAction', object_acted_on, goal_location, detected_objects)
 
     def __str__(self):
         return self.id.split('3')[-1]
@@ -87,7 +108,7 @@ class KnowRob(object):
         self.prolog.wait_for_service()
 
     def prolog_query(self, q):
-        print(q)
+        print('sending {}'.format(q))
         query = self.prolog.query(q)
         solutions = [x if x != {} else True for x in query.solutions()]
         if len(solutions) > 1:
@@ -95,6 +116,8 @@ class KnowRob(object):
         elif len(solutions) == 0:
             rospy.logwarn('{} returned nothing'.format(q))
         query.finish()
+        print('solutions {}'.format(solutions))
+        print('----------------------')
         return solutions
 
     def remove_http_shit(self, s):
@@ -237,12 +260,14 @@ class KnowRob(object):
             self.prolog_query(q)
 
     def add_separators_and_barcodes(self, floor_id, separators, barcodes):
+        # update floor height
         new_floor_height = np.mean([self.tf.transform_pose(
             self.get_perceived_frame_id(floor_id), p).pose.position.z for p in separators])
         current_floor_pose = self.tf.lookup_transform(MAP, self.get_object_frame_id(floor_id))
         current_floor_pose.pose.position.z += new_floor_height
         q = 'belief_at_update(\'{}\', {})'.format(floor_id, self.pose_to_prolog(current_floor_pose))
         self.prolog_query(q)
+
         separator_q = ','.join(
             ['belief_shelf_part_at(\'{}\', {}, norm({}), _)'.format(floor_id, SEPARATOR, p.pose.position.x)
              for p in separators])
@@ -252,6 +277,26 @@ class KnowRob(object):
                                                                                                      p.pose.position.x)
                               for barcode, p in barcodes.items()])
         self.prolog_query(','.join([separator_q, barcode_q]))
+        self.start_shelf_separator_perception(self.get_separators(floor_id))
+        self.finish_action()
+        self.start_shelf_label_perception(self.get_barcodes(floor_id))
+        self.finish_action()
+
+    def get_separators(self, floor_id):
+        q = 'findall(S, shelf_layer_separator(\'{}\', S), Ss)'.format(floor_id)
+        solutions = self.prolog_query(q)
+        return solutions[0]['Ss']
+
+    def get_mounting_bars(self, floor_id):
+        q = 'findall(S, shelf_layer_mounting_bar(\'{}\', S), Ss)'.format(floor_id)
+        solutions = self.prolog_query(q)
+        return solutions[0]['Ss']
+
+    def get_barcodes(self, floor_id):
+        q = 'findall(S, shelf_layer_label(\'{}\', S), Ss)'.format(floor_id)
+        solutions = self.prolog_query(q)
+        return solutions[0]['Ss']
+
 
     def add_mounting_bars_and_barcodes(self, floor_id, separators, barcodes):
         separator_q = ','.join(
@@ -264,11 +309,16 @@ class KnowRob(object):
                               for barcode, p in barcodes.items()])
         self.prolog_query('{},{}'.format(separator_q, barcode_q))
 
+        self.start_shelf_bar_perception(self.get_mounting_bars(floor_id))
+        self.finish_action()
+        self.start_shelf_label_perception(self.get_barcodes(floor_id))
+        self.finish_action()
+
     def get_facings(self, floor_id):
         q = 'findall([F, P, W, L], (shelf_facing(\'{}\', F), ' \
                                 'shelf_facing_product_type(F,P), ' \
                                 'comp_facingWidth(F,literal(type(_, W))), ' \
-                                'rdf_has(F, shop:leftSeparator, L)),' \
+                                '(rdf_has(F, shop:leftSeparator, L); rdf_has(F, shop:mountingBarOfFacing, L))),' \
             'Facings).'.format(floor_id)
         solutions = self.prolog_query(q)[0]
         facings = {}
@@ -296,19 +346,27 @@ class KnowRob(object):
         a = 'muh#experiment'
         self.action_graph = ActionGraph.start_experiment(self, a)
 
-    def start_shelf_system_mapping(self, shelf_system_id):
+    def start_shelf_system_mapping(self, object_acted_on=None):
+        """
+        :param object_acted_on: shelf system id
+        :return:
+        """
         a = 'http://knowrob.org/kb/shop.owl#ShelfSystemMapping'
-        self.action_graph = self.action_graph.add_sub_action(self, a, object_acted_on=shelf_system_id)
+        self.action_graph = self.action_graph.add_sub_action(self, a, object_acted_on=object_acted_on)
 
-    def start_shelf_frame_mapping(self, shelf_id):
+    def start_shelf_frame_mapping(self, object_acted_on=None):
         a = 'http://knowrob.org/kb/shop.owl#ShelfFrameMapping'
         if self.action_graph is not None:
-            self.action_graph = self.action_graph.add_sub_action(a, object_acted_on=shelf_id)
+            self.action_graph = self.action_graph.add_sub_action(a, object_acted_on=object_acted_on)
 
-    def start_shelf_layer_mapping(self, floor_id):
+    def start_shelf_layer_mapping(self, object_acted_on=None):
+        """
+        :param object_acted_on: floor_id
+        :return:
+        """
         a = 'http://knowrob.org/kb/shop.owl#ShelfLayerMapping'
         if self.action_graph is not None:
-            self.action_graph = self.action_graph.add_sub_action(a, object_acted_on=floor_id)
+            self.action_graph = self.action_graph.add_sub_action(a, object_acted_on=object_acted_on)
 
     def start_finding_shelf_layer(self):
         a = 'http://knowrob.org/kb/shop.owl#FindingShelfLayer'
@@ -320,49 +378,88 @@ class KnowRob(object):
         if self.action_graph is not None:
             self.action_graph = self.action_graph.add_sub_action(a)
 
-    def start_shelf_layer_perception(self):
+    def start_shelf_layer_perception(self, detected_objects=None):
+        """
+        :param detected_objects: list of floor_id
+        :return:
+        """
         a = 'http://knowrob.org/kb/shop.owl#ShelfLayerPerception'
         if self.action_graph is not None:
-            self.action_graph = self.action_graph.add_sub_action(a)
+            self.action_graph = self.action_graph.add_sub_event(a, detected_objects=detected_objects)
 
     def start_shelf_layer_counting(self):
         a = 'muh#Counting'
         if self.action_graph is not None:
             self.action_graph = self.action_graph.add_sub_action(a)
 
-    def start_move_to_shelf_frame(self):
+    def start_move_to_shelf_frame(self, goal_location=None):
+        """
+        :param goal_location: shelf id
+        :return:
+        """
         a = 'http://knowrob.org/kb/shop.owl#MoveToShelfFrame'
         if self.action_graph is not None:
-            self.action_graph = self.action_graph.add_sub_action(a)
+            self.action_graph = self.action_graph.add_sub_action(a, goal_location=goal_location)
 
-    def start_move_to_shelf_layer(self):
+    def start_move_to_shelf_frame_end(self, goal_location=None):
+        """
+        :param goal_location: pose
+        :return:
+        """
+        a = 'http://knowrob.org/kb/shop.owl#MoveToShelfFrameEnd'
+        if self.action_graph is not None:
+            self.action_graph = self.action_graph.add_sub_action(a, goal_location=goal_location)
+
+    def start_move_to_shelf_layer(self, goal_location=None):
+        """
+        :param goal_location: floor id
+        :return:
+        """
         a = 'http://knowrob.org/kb/shop.owl#MoveToShelfLayer'
         if self.action_graph is not None:
-            self.action_graph = self.action_graph.add_sub_action(a)
+            self.action_graph = self.action_graph.add_sub_action(a, goal_location=goal_location)
 
-    def start_looking_at_location(self):
+    def start_looking_at_location(self, goal_location=None):
+        """
+        :param goal_location: pose
+        :return:
+        """
         a = 'http://knowrob.org/kb/knowrob.owl#LookingAtLocation'
         if self.action_graph is not None:
-            self.action_graph = self.action_graph.add_sub_action(a)
+            self.action_graph = self.action_graph.add_sub_action(a, goal_location=goal_location)
 
-    def start_base_movement(self, goal):
+    def start_base_movement(self, goal_location=None):
+        """
+        :param goal_location: pose
+        :return:
+        """
         a = 'http://knowrob.org/kb/motions.owl#BaseMovement'
         if self.action_graph is not None:
-            self.action_graph = self.action_graph.add_sub_motion(a)
+            self.action_graph = self.action_graph.add_sub_motion(a, goal_location=goal_location)
 
-    def start_hed_movement(self, goal):
+    def start_head_movement(self, goal_location=None):
+        """
+        :param goal_location: pose
+        :return:
+        """
         a = 'http://knowrob.org/kb/knowrob_common.owl#HeadMovement'
         if self.action_graph is not None:
-            self.action_graph = self.action_graph.add_sub_motion(a)
+            self.action_graph = self.action_graph.add_sub_motion(a, goal_location=goal_location)
 
+    def start_shelf_separator_perception(self, detected_objects=None):
+        a = 'http://knowrob.org/kb/shop.owl#ShelfSeparatorPerception'
+        if self.action_graph is not None:
+            self.action_graph = self.action_graph.add_sub_event(a, detected_objects=detected_objects)
 
-    # def start_scanning_action(self):
-    #     action_type = 'http://knowrob.org/kb/knowrob.owl#LookingForSomething'
-    #     self.action_graph = ActionGraph(self, action_type, msg='start scanning')
+    def start_shelf_bar_perception(self, detected_objects=None):
+        a = 'http://knowrob.org/kb/shop.owl#ShelfBarPerception'
+        if self.action_graph is not None:
+            self.action_graph = self.action_graph.add_sub_event(a, detected_objects=detected_objects)
 
-    # def start_movement(self, action_type='http://knowrob.org/kb/knowrob_common.owl#ArmMovement'):
-    #     if self.action_graph is not None:
-    #         self.action_graph = self.action_graph.add_sub_action(action_type, msg='muh')
+    def start_shelf_label_perception(self, detected_objects=None):
+        a = 'http://knowrob.org/kb/shop.owl#ShelfLabelPerception'
+        if self.action_graph is not None:
+            self.action_graph = self.action_graph.add_sub_event(a, detected_objects=detected_objects)
 
     def finish_action(self):
         if self.action_graph is not None:

@@ -107,9 +107,16 @@ class GiskardWrapper(object):
 
             self.send_goal(goal)
 
-    def send_goal(self, goal, action_type='http://knowrob.org/kb/knowrob_common.owl#ArmMovement'):
+    def send_goal(self, goal):
+        if self.knowrob is not None:
+            if goal.controllers[0].type == Controller.JOINT:
+                self.knowrob.start_head_movement()
+            else:
+                self.knowrob.start_head_movement(self.knowrob.pose_to_prolog(goal.controllers[0].goal_pose))
         self.client.send_goal(goal)
         result = self.client.wait_for_result(rospy.Duration(self.move_time_limit))
+        if self.knowrob is not None:
+            self.knowrob.finish_action()
         if not result:
             raise Exception('arm movement failed')
         # print('finished in 10s?: {}'.format(result))

@@ -110,20 +110,22 @@ class RoboSherlock(object):
         return floors
 
     def count(self, product, width, left_separator, facing_type='standing'):
-        ls = self.tf.lookup_transform(MAP, self.knowrob.get_perceived_frame_id(left_separator))
-        q = {'detect':{
-            'type': product,
-            'pose_stamped': convert_ros_message_to_dictionary(ls),
-            'shelf_type': facing_type,
-            'width': width
-        }}
-        print(q)
-        req = RSQueryServiceRequest()
-        req.query = json.dumps(q)
-        result = self.robosherlock_service.call(req)
-        print(result)
-        return len(result.answer)
-        # return int(np.random.random() * 4)+1
+        if self.robosherlock:
+            ls = self.tf.lookup_transform(MAP, self.knowrob.get_perceived_frame_id(left_separator))
+            q = {'detect':{
+                'type': product,
+                'pose_stamped': convert_ros_message_to_dictionary(ls),
+                'shelf_type': facing_type,
+                'width': width
+            }}
+            print(q)
+            req = RSQueryServiceRequest()
+            req.query = json.dumps(q)
+            result = self.robosherlock_service.call(req)
+            print(result)
+            return len(result.answer)
+        else:
+            return int(np.random.random() * 4)+1
 
 
 if __name__ == '__main__':

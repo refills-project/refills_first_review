@@ -31,13 +31,13 @@ class MoveBase(object):
         self.timeout = 30
         self.dist_to_shelfs = 1.4
 
-    def move_absolute(self, target_pose, action_type='http://knowrob.org/kb/motions.owl#LegMovement'):
+    def move_absolute(self, target_pose):
         if self.enabled:
             self.goal_pub.publish(target_pose)
             goal = MoveBaseGoal()
             goal.target_pose = target_pose
             if self.knowrob is not None:
-                self.knowrob.start_base_movement(1)
+                self.knowrob.start_base_movement(self.knowrob.pose_to_prolog(target_pose))
             self.client.send_goal(goal)
             wait_result = self.client.wait_for_result(rospy.Duration(self.timeout))
             result = self.client.get_result()
