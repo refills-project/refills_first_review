@@ -42,7 +42,7 @@ FLOOR_DETECTION_OFFSET = {'x': 0.5,
 #                    }
 # in floor_id
 COUNTING_OFFSET = PoseStamped(Header(0, rospy.Time(), ''),
-                              Pose(Point(0.097, -0.345, 0.2),
+                              Pose(Point(0.097, -0.37, 0.16),
                                    Quaternion(-0.748, 0.000, -0.000, 0.664)))
 COUNTING_OFFSET2 = -0.15
 
@@ -87,6 +87,7 @@ class CRAM(object):
         try:
             self.move_arm.drive_pose()
             # TODO scan shelf system
+            # self.knowrob.start_shelf_system_mapping(self.sys)
             for i, shelf_id in enumerate(goal.loc_id):
                 rospy.loginfo('scanning {}'.format(shelf_id))
                 self.scan_shelf(shelf_id)
@@ -133,45 +134,54 @@ class CRAM(object):
         self._as.publish_feedback(feedback)
 
         self.knowrob.start_shelf_frame_mapping(shelf_id)
-        self.detect_shelf_floors(shelf_id)
 
-        floor_ids = self.knowrob.get_floor_ids(shelf_id)
+        self.knowrob.start_move_to_shelf_frame(shelf_id)
+        self.move_base.move_absolute_xyz(self.knowrob.get_perceived_frame_id(shelf_id),
+                                         FLOOR_DETECTION_OFFSET['x'],
+                                         FLOOR_DETECTION_OFFSET['y'],
+                                         FLOOR_DETECTION_OFFSET['z'])
+        self.knowrob.finish_action()
+
+        floor_ids = self.detect_shelf_floors(shelf_id)
+
         num_of_steps = len(floor_ids) + 1
 
         feedback.progress = 1 / num_of_steps
         self._as.publish_feedback(feedback)
 
         for i, floor_id in enumerate(floor_ids):
-            self.knowrob.start_shelf_layer_mapping(floor_id)
-            # if not self.knowrob.is_floor_too_high(shelf_floor_id):
-            self.scan_floor(shelf_id, floor_id)
-            # if not self.knowrob.is_hanging_foor(shelf_floor_id):
-            self.count_floor(shelf_id, floor_id)
+            self.shelf_layer_mapping(shelf_id, floor_id)
             feedback.progress = (i + 1) / num_of_steps
             self._as.publish_feedback(feedback)
-            self.knowrob.finish_action()
         self.move_arm.drive_pose()
         self.knowrob.finish_action()
 
     def detect_shelf_floors(self, shelf_id):
         self.knowrob.start_finding_shelf_layer()
-        self.move_base.move_absolute_xyz(self.knowrob.get_perceived_frame_id(shelf_id),
-                                         FLOOR_DETECTION_OFFSET['x'],
-                                         FLOOR_DETECTION_OFFSET['y'],
-                                         FLOOR_DETECTION_OFFSET['z'])
         self.robosherlock.start_floor_detection(shelf_id)
         self.knowrob.start_looking_at_location()
         self.move_arm.floor_detection_pose()
-        self.knowrob.finish_action()
         if self.robosherlock.robosherlock:
             rospy.sleep(10)
+        self.knowrob.finish_action()
         self.knowrob.start_looking_at_location()
         self.move_arm.floor_detection_pose2()
-        self.knowrob.finish_action()
         if self.robosherlock.robosherlock:
             rospy.sleep(10)
+        self.knowrob.finish_action()
         floor_heights = self.robosherlock.stop_floor_detection(shelf_id)
         self.knowrob.add_shelf_floors(shelf_id, floor_heights)
+        floor_ids = self.knowrob.get_floor_ids(shelf_id)
+        self.knowrob.start_shelf_layer_perception(floor_ids)
+        self.knowrob.finish_action()
+        self.knowrob.finish_action()
+        return floor_ids
+
+    def shelf_layer_mapping(self, shelf_id, floor_id):
+        self.knowrob.start_shelf_layer_mapping(floor_id)
+        self.scan_floor(shelf_id, floor_id)
+        # if not self.knowrob.is_hanging_foor(shelf_floor_id):
+        self.count_floor(shelf_id, floor_id)
         self.knowrob.finish_action()
 
     def scan_floor(self, shelf_id, floor_id):
@@ -193,11 +203,11 @@ class CRAM(object):
         self.robosherlock.start_barcode_detection(shelf_id, floor_id)
 
         try:
+            self.knowrob.start_move_to_shelf_frame_end()
             self.move_base.move_relative([-self.knowrob.get_floor_width(), 0, 0])
         except TimeoutError as e:
             self.move_base.STOP()
 
-        self.knowrob.finish_action()
 
         barcodes = self.robosherlock.stop_barcode_detection()
         if not self.knowrob.is_hanging_foor(floor_id):
@@ -206,6 +216,8 @@ class CRAM(object):
         else:
             mounting_bars = self.robosherlock.stop_separator_detection()
             self.knowrob.add_mounting_bars_and_barcodes(floor_id, mounting_bars, barcodes)
+        self.knowrob.finish_action()
+        self.knowrob.finish_action()
         self.knowrob.finish_action()
 
     def set_floor_scan_pose(self, shelf_id, floor_id):
@@ -234,20 +246,17 @@ class CRAM(object):
         facings = self.knowrob.get_facings(floor_id)
         goal = deepcopy(COUNTING_OFFSET)
         goal.header.frame_id = self.knowrob.get_perceived_frame_id(floor_id)
+        if self.knowrob.is_hanging_foor(floor_id):
+            goal.pose.position.z = -goal.pose.position.z
         goal = self.tf.transform_pose(self.move_arm.root, goal)
         goal.pose.position.x = COUNTING_OFFSET2
-        # self.move_arm.set_orientation_goal(QuaternionStamped(Header(0, rospy.Time(), self.move_arm.root),
-        #                                                      Quaternion(*COUNTING_OFFSET['rot'])))
-        # self.move_arm.set_translation_goal(PointStamped(Header(0, rospy.Time(), self.move_arm.tip),
-        #                                                 Point(*COUNTING_OFFSET['trans'])))
         self.move_arm.set_and_send_cartesian_goal(goal)
-        # self.move_arm.send_cartesian_goal()
         if len(facings) == 0:
             self.move_base.move_relative([self.knowrob.get_floor_width(), 0, 0])
         else:
             frame_id = self.knowrob.get_perceived_frame_id(shelf_id)
             gripper_in_base = self.tf.lookup_transform(self.move_arm.root, self.move_arm.tip)
-            for i, (facing_id, (facing_pose, left_sep, right_sep)) in enumerate(
+            for i, (facing_id, (facing_pose, product, width, left_sep)) in enumerate(
                     reversed(sorted(facings.items(), key=lambda (k, v): v[0].pose.position.x))):
                 self.knowrob.start_shelf_layer_counting()
 
@@ -255,7 +264,8 @@ class CRAM(object):
                                                  gripper_in_base.pose.position.x + facing_pose.pose.position.x,
                                                  FLOOR_SCANNING_OFFSET['y'],
                                                  FLOOR_SCANNING_OFFSET['z'])
-                count = self.robosherlock.count(left_sep, right_sep)
+
+                count = self.robosherlock.count(product, width, left_sep, 'standing')
                 for j in range(count):
                     self.knowrob.add_object(facing_id)
                 # TODO get name of object in facing [medium]
