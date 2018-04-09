@@ -50,7 +50,10 @@ class RoboSherlock(object):
     def set_ring_light(self, value=True):
         req = SetBoolRequest()
         req.data = value
-        self.ring_light_srv.call(req)
+        try:
+            self.ring_light_srv.call(req)
+        except:
+            rospy.logwarn('ring_light_switch not available')
 
     def start_separator_detection(self, floor_id):
         self.set_ring_light(True)
