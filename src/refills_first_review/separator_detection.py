@@ -27,8 +27,8 @@ class SeparatorClustering(object):
         self.map_frame_id = 'map'
         self.separator_maker_color = ColorRGBA(.8, .8, .8, .8)
         self.separator_maker_scale = Vector3(.01, .5, .05)
-        self.min_samples = 3
-        self.max_dist = 0.03
+        self.min_samples = 4
+        self.max_dist = 0.02
         self.hanging = False
 
     def start_listening_separators(self, floor_id, topic='/separator_marker_detector_node/data_out'):
@@ -111,10 +111,10 @@ class SeparatorClustering(object):
         for i in range(20):
             self.detections.append([0.01,0,0])
             self.detections.append([0.99,0,0])
-            self.detections.append([0.02,0,0])
-            self.detections.append([0.98,0,0])
-            self.detections.append([0.03,0,0])
-            self.detections.append([0.97,0,0])
+            # self.detections.append([0.02,0,0])
+            # self.detections.append([0.98,0,0])
+            # self.detections.append([0.03,0,0])
+            # self.detections.append([0.97,0,0])
 
 
 if __name__ == '__main__':

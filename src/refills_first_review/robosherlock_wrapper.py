@@ -135,12 +135,12 @@ class RoboSherlock(object):
             print(q)
             req = RSQueryServiceRequest()
             req.query = json.dumps(q)
-            result = self.robosherlock_service.call(req)
+            result = self.robosherlock_service.call(req, )
             print(result)
             count = len(result.answer)
         else:
             count = int(np.random.random() * 4)+1
-        self.set_ring_light(True)
+        # self.set_ring_light(True)
         return count
 
 
