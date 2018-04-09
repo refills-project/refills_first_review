@@ -7,6 +7,7 @@ import numpy as np
 from time import time
 import datetime
 import os
+from subprocess import call
 
 import rospy
 from rospkg import RosPack
@@ -104,7 +105,8 @@ class CRAM(object):
                 os.makedirs(episode_dir)
                 self.knowrob.save_beliefstate(episode_dir+'/beliefstate.owl')
                 self.knowrob.save_action_graph(episode_dir+'/actionlog.owl')
-                #self.save_mongo(episode_dir)
+                self.mongo_save(episode_dir)
+                self.mongo_whipe()
             except OSError as exc:  # Python >2.5
                 rospy.logwarn('failed to export logs, IO error')
             #self.knowrob.save_beliefstate()
@@ -114,6 +116,11 @@ class CRAM(object):
         except Exception as e:
             traceback.print_exc()
             rospy.loginfo('preempted')
+
+    def mongo_save(self,out_dir):
+        call(['mongodump', '--db REFILLS_0 --out '+out_dir])
+    def mongo_whipe(self):
+        call(['mongo', "REFILLS_0 --eval 'db.dropDatabase()'"])
 
     def detect_baseboards(self):
         rospy.loginfo('shelf baseboard detection requires manuel mode')
