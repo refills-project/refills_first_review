@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import rospy
 from std_srvs.srv import SetBool, SetBoolResponse
 import os
