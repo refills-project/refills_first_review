@@ -1,5 +1,6 @@
 import json
 from collections import OrderedDict, defaultdict
+from multiprocessing import Lock
 from rospkg import RosPack
 
 import rospy
@@ -51,7 +52,9 @@ class ActionGraph(object):
         q = 'cram_start_action(\'{}\', \'{}\', {}, {}, R)'.format(action_type, '',
                                                                   rospy.get_rostime(),
                                                                   previous_action)
-        return self.knowrob.prolog_query(q)[0]['R']
+        result = self.knowrob.prolog_query(q)[0]['R']
+        return result
+        # return 'asdf'
 
     def add_sub_thingy(self, action_type, sub_type, object_acted_on=None, goal_location=None, detected_objects=None):
         new_id = self.create_thingy(action_type)
@@ -84,11 +87,9 @@ class ActionGraph(object):
 
     def add_sub_event(self, event_type, object_acted_on=None, goal_location=None, detected_objects=None):
         return self.add_sub_thingy(event_type, 'knowrob:subEvent', object_acted_on, goal_location, detected_objects)
-        # return self.add_sub_thingy(event_type, 'knowrob:subAction', object_acted_on, goal_location, detected_objects)
 
     def add_sub_motion(self, motion_type, object_acted_on=None, goal_location=None, detected_objects=None):
         return self.add_sub_thingy(motion_type, 'knowrob:subMotion', object_acted_on, goal_location, detected_objects)
-        # return self.add_sub_thingy(motion_type, 'knowrob:subAction', object_acted_on, goal_location, detected_objects)
 
     def __str__(self):
         return self.id.split('3')[-1]
@@ -106,19 +107,21 @@ class KnowRob(object):
         self.tf = TfWrapper()
         self.prolog = json_prolog.Prolog()
         self.prolog.wait_for_service()
+        self.query_lock = Lock()
 
     def prolog_query(self, q):
-        print('sending {}'.format(q))
-        query = self.prolog.query(q)
-        solutions = [x if x != {} else True for x in query.solutions()]
-        if len(solutions) > 1:
-            rospy.logwarn('{} returned more than one result'.format(q))
-        elif len(solutions) == 0:
-            rospy.logwarn('{} returned nothing'.format(q))
-        query.finish()
-        print('solutions {}'.format(solutions))
-        print('----------------------')
-        return solutions
+        with self.query_lock:
+            print('sending {}'.format(q))
+            query = self.prolog.query(q)
+            solutions = [x if x != {} else True for x in query.solutions()]
+            if len(solutions) > 1:
+                rospy.logwarn('{} returned more than one result'.format(q))
+            elif len(solutions) == 0:
+                rospy.logwarn('{} returned nothing'.format(q))
+            query.finish()
+            print('solutions {}'.format(solutions))
+            print('----------------------')
+            return solutions
 
     def remove_http_shit(self, s):
         return s.split('#')[-1].split('\'')[0]
@@ -268,15 +271,23 @@ class KnowRob(object):
         q = 'belief_at_update(\'{}\', {})'.format(floor_id, self.pose_to_prolog(current_floor_pose))
         self.prolog_query(q)
 
-        separator_q = ','.join(
-            ['belief_shelf_part_at(\'{}\', {}, norm({}), _)'.format(floor_id, SEPARATOR, p.pose.position.x)
-             for p in separators])
+        for p in separators:
+            q = 'belief_shelf_part_at(\'{}\', {}, norm({}), _)'.format(floor_id, SEPARATOR, p.pose.position.x)
+            self.prolog_query(q)
+        # separator_q = ','.join(
+        #     ['belief_shelf_part_at(\'{}\', {}, norm({}), _)'.format(floor_id, SEPARATOR, p.pose.position.x)
+        #      for p in separators])
 
-        barcode_q = ','.join(['belief_shelf_barcode_at(\'{}\', {}, dan(\'{}\'), norm({}), _)'.format(floor_id, BARCODE,
-                                                                                                     barcode,
-                                                                                                     p.pose.position.x)
-                              for barcode, p in barcodes.items()])
-        self.prolog_query(','.join([separator_q, barcode_q]))
+        for barcode, p in barcodes.items():
+            q = 'belief_shelf_barcode_at(\'{}\', {}, dan(\'{}\'), norm({}), _)'.format(floor_id, BARCODE, barcode, p.pose.position.x)
+            self.prolog_query(q)
+        # barcode_q = ','.join(['belief_shelf_barcode_at(\'{}\', {}, dan(\'{}\'), norm({}), _))'.format(floor_id, BARCODE,
+        #                                                                                              barcode,
+        #                                                                                              p.pose.position.x)
+        #                       for barcode, p in barcodes.items()])
+        # self.prolog_query(','.join([separator_q, barcode_q]))
+        # self.prolog_query(separator_q)
+        # self.prolog_query(barcode_q)
         self.start_shelf_separator_perception(self.get_separators(floor_id))
         self.finish_action()
         self.start_shelf_label_perception(self.get_barcodes(floor_id))
@@ -332,19 +343,15 @@ class KnowRob(object):
         q = 'product_spawn_front_to_back(\'{}\', ObjId)'.format(facing_id)
         self.prolog_query(q)
 
-    def save_beliefstate(self):
-        path = '{}/data/beliefstate.owl'.format(RosPack().get_path('refills_first_review'))
-        self.save_beliefstate(path)
-    
-    def save_beliefstate(self, path):
+    def save_beliefstate(self, path=None):
+        if path is None:
+            path = '{}/data/beliefstate.owl'.format(RosPack().get_path('refills_first_review'))
         q = 'rdf_save(\'{}\', belief_state)'.format(path)
         self.prolog_query(q)
 
-    def save_action_graph(self):
-        path = '{}/data/action_graph.owl'.format(RosPack().get_path('refills_first_review'))
-        self.save_action_graph(path)
-    
-    def save_action_graph(self, path):
+    def save_action_graph(self, path=None):
+        if path is not None:
+            path = '{}/data/action_graph.owl'.format(RosPack().get_path('refills_first_review'))
         q = 'rdf_save(\'{}\', [graph(\'LoggingGraph\')])'.format(path)
         self.prolog_query(q)
 
