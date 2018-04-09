@@ -5,8 +5,11 @@ from __future__ import print_function, division
 import traceback
 import numpy as np
 from time import time
+import datetime
+import os
 
 import rospy
+from rospkg import RosPack
 from actionlib import SimpleActionServer
 from copy import deepcopy
 from geometry_msgs.msg import QuaternionStamped, Quaternion, PointStamped, Point, PoseStamped, Pose
@@ -93,8 +96,20 @@ class CRAM(object):
                 self.scan_shelf(shelf_id)
                 # TODO feedback
             self.knowrob.finish_action()
-            self.knowrob.save_beliefstate()
-            self.knowrob.save_action_graph()
+            
+            try:
+                data_path = '{}/data/'.format(RosPack().get_path('refills_first_review'))
+                episode_name = str(datetime.date.today()) + '_' + str(time())
+                episode_dir = data_path+episode_name
+                os.makedirs(episode_dir)
+                self.knowrob.save_beliefstate(episode_dir+'/beliefstate.owl')
+                self.knowrob.save_action_graph(episode_dir+'/actionlog.owl')
+                #self.save_mongo(episode_dir)
+            except OSError as exc:  # Python >2.5
+                rospy.logwarn('failed to export logs, IO error')
+            #self.knowrob.save_beliefstate()
+            #self.knowrob.save_action_graph()
+            
             self._as.set_succeeded()
         except Exception as e:
             traceback.print_exc()
