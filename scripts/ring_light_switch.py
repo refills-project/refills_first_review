@@ -15,5 +15,5 @@ def cb(srv):
     return r
 
 rospy.init_node('ring_light_switch')
-s = rospy.Service('~/setbool', SetBool, cb)
+s = rospy.Service('~setbool', SetBool, cb)
 rospy.spin()
