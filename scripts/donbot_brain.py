@@ -280,7 +280,7 @@ class CRAM(object):
                                                  FLOOR_SCANNING_OFFSET['y'],
                                                  FLOOR_SCANNING_OFFSET['z'])
 
-                count = self.robosherlock.count(product, width, left_sep, 'standing')
+                count = self.robosherlock.count(product, width, left_sep, self.knowrob.get_perceived_frame_id(shelf_id), 'standing')
                 for j in range(count):
                     self.knowrob.add_object(facing_id)
                 # TODO get name of object in facing [medium]

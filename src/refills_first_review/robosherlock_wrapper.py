@@ -9,6 +9,7 @@ from iai_robosherlock_msgs.srv import RSQueryService, RSQueryServiceRequest
 from rospy import ROSException
 from rospy_message_converter import message_converter
 from rospy_message_converter.message_converter import convert_ros_message_to_dictionary
+from std_srvs.srv import SetBool, SetBoolRequest
 
 from refills_first_review.barcode_detection import BarcodeDetector
 from refills_first_review.baseboard_detection import BaseboardDetector
@@ -33,6 +34,7 @@ class RoboSherlock(object):
         self.separator_detection = SeparatorClustering(knowrob)
         self.baseboard_detection = BaseboardDetector()
         self.barcode_detection = BarcodeDetector(knowrob)
+        self.ring_light_srv = rospy.ServiceProxy('ring_light_switch/setbool', SetBool)
         try:
             rospy.wait_for_service('/RoboSherlock/json_query', 1)
             self.robosherlock_service = rospy.ServiceProxy('/RoboSherlock/json_query',
@@ -45,22 +47,31 @@ class RoboSherlock(object):
         self.tf = TfWrapper()
         rospy.logwarn('robosherlock not fully integrated')
 
+    def set_ring_light(self, value=True):
+        req = SetBoolRequest()
+        req.data = value
+        self.ring_light_srv.call(req)
+
     def start_separator_detection(self, floor_id):
+        self.set_ring_light(True)
         self.separator_detection.start_listening_separators(floor_id)
 
     def start_mounting_bar_detection(self, floor_id):
+        self.set_ring_light(True)
         self.separator_detection.start_listening_mounting_bars(floor_id)
 
     def stop_separator_detection(self):
         return self.separator_detection.stop_listening()
 
     def start_baseboard_detection(self):
+        self.set_ring_light(True)
         self.baseboard_detection.start_listening()
 
     def stop_baseboard_detection(self):
         return self.baseboard_detection.stop_listening()
 
     def start_barcode_detection(self, shelf_id, floor_id):
+        self.set_ring_light(True)
         self.barcode_detection.start_listening(shelf_id, floor_id)
         pass
 
@@ -109,23 +120,28 @@ class RoboSherlock(object):
             floors = FLOORS[int(shelf_pose.pose.position.x)]
         return floors
 
-    def count(self, product, width, left_separator, facing_type='standing'):
+    def count(self, product, width, left_separator, perceived_shelf_frame_id, facing_type='standing'):
+        self.set_ring_light(False)
         if self.robosherlock:
-            ls = self.tf.lookup_transform(MAP, self.knowrob.get_perceived_frame_id(left_separator))
+            ls = self.tf.lookup_transform(perceived_shelf_frame_id,
+                                          self.knowrob.get_perceived_frame_id(left_separator))
             q = {'detect':{
                 'type': product,
                 'pose_stamped': convert_ros_message_to_dictionary(ls),
                 'shelf_type': facing_type,
-                'width': width
+                'width': width,
+                'location': perceived_shelf_frame_id
             }}
             print(q)
             req = RSQueryServiceRequest()
             req.query = json.dumps(q)
             result = self.robosherlock_service.call(req)
             print(result)
-            return len(result.answer)
+            count = len(result.answer)
         else:
-            return int(np.random.random() * 4)+1
+            count = int(np.random.random() * 4)+1
+        self.set_ring_light(True)
+        return count
 
 
 if __name__ == '__main__':

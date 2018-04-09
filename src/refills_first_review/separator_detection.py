@@ -89,7 +89,7 @@ class SeparatorClustering(object):
         return separator_cluster.mean(axis=0)
 
     def fake_detection(self):
-        num_fake_separators = 6
+        num_fake_separators = 20
         frame_id = self.knowrob.get_perceived_frame_id(self.current_floor_id)
         for i in range(num_fake_separators):
             for j in range(self.min_samples + 1):
