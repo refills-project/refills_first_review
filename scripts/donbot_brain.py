@@ -186,12 +186,12 @@ class CRAM(object):
     def detect_shelf_floors(self, shelf_id):
         self.knowrob.start_finding_shelf_layer()
         self.robosherlock.start_floor_detection(shelf_id)
-        self.knowrob.start_looking_at_location()
+        self.knowrob.start_looking_at_location(shelf_id)
         self.move_arm.floor_detection_pose()
         if self.robosherlock.robosherlock:
             rospy.sleep(10)
         self.knowrob.finish_action()
-        self.knowrob.start_looking_at_location()
+        self.knowrob.start_looking_at_location(shelf_id)
         self.move_arm.floor_detection_pose2()
         if self.robosherlock.robosherlock:
             rospy.sleep(10)
@@ -222,7 +222,7 @@ class CRAM(object):
         self.move_in_front_of_shelf(shelf_id)
         self.knowrob.finish_action()
 
-        self.knowrob.start_looking_at_location()
+        self.knowrob.start_looking_at_location(floor_id)
         if not self.knowrob.is_hanging_foor(floor_id):
             self.robosherlock.start_separator_detection(floor_id)
         else:
@@ -269,7 +269,7 @@ class CRAM(object):
 
     def count_floor(self, shelf_id, floor_id):
         rospy.loginfo('counting objects on floor {}'.format(floor_id))
-
+        self.knowrob.start_shelf_layer_counting()
         facings = self.knowrob.get_facings(floor_id)
         goal = deepcopy(COUNTING_OFFSET)
         goal.header.frame_id = self.knowrob.get_perceived_frame_id(floor_id)
@@ -285,12 +285,14 @@ class CRAM(object):
             gripper_in_base = self.tf.lookup_transform(self.move_arm.root, self.move_arm.tip)
             for i, (facing_id, (facing_pose, product, width, left_sep)) in enumerate(
                     reversed(sorted(facings.items(), key=lambda (k, v): v[0].pose.position.x))):
-                self.knowrob.start_shelf_layer_counting()
+                if i != 0:
+                    self.knowrob.start_shelf_layer_counting()
 
                 self.move_base.move_absolute_xyz(frame_id,
                                                  gripper_in_base.pose.position.x + facing_pose.pose.position.x,
                                                  FLOOR_SCANNING_OFFSET['y'],
                                                  FLOOR_SCANNING_OFFSET['z'])
+
 
                 count = self.robosherlock.count(product, width, left_sep, self.knowrob.get_perceived_frame_id(shelf_id), 'standing')
                 for j in range(count):

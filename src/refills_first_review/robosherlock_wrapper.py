@@ -2,7 +2,6 @@ from __future__ import print_function, division
 
 import json
 import numpy as np
-import pymongo
 
 import rospy
 from geometry_msgs.msg import PoseStamped
@@ -89,6 +88,7 @@ class RoboSherlock(object):
         return FLOORS[shelf_id]
 
     def start_floor_detection(self, shelf_id):
+        self.set_ring_light(False)
         if self.robosherlock and False:
             req = RSQueryServiceRequest()
             q = {"scan":

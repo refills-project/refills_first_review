@@ -113,6 +113,7 @@ class GiskardWrapper(object):
                 self.knowrob.start_head_movement()
             else:
                 self.knowrob.start_head_movement(self.knowrob.pose_to_prolog(goal.controllers[0].goal_pose))
+                # self.knowrob.start_head_movement()
         self.client.send_goal(goal)
         result = self.client.wait_for_result(rospy.Duration(self.move_time_limit))
         if self.knowrob is not None:

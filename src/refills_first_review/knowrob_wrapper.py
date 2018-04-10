@@ -395,7 +395,7 @@ class KnowRob(object):
             self.action_graph = self.action_graph.add_sub_event(a, detected_objects=detected_objects)
 
     def start_shelf_layer_counting(self):
-        a = 'muh#Counting'
+        a = 'http://knowrob.org/kb/shop.owl#ShelfLayerCounting'
         if self.action_graph is not None:
             self.action_graph = self.action_graph.add_sub_action(a)
 
