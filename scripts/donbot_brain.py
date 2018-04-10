@@ -89,6 +89,11 @@ class CRAM(object):
             rospy.logerr('only complete scans are supported')
             self._as.set_aborted('only complete scans are supported')
         try:
+            try:
+                self.mongo_whipe()
+            except OSError as exc:  # Python >2.5
+                rospy.logwarn('failed to whipe mongo, IO error')
+            
             self.move_arm.drive_pose()
             # TODO scan shelf system
             # self.knowrob.start_shelf_system_mapping(self.sys)
@@ -106,7 +111,6 @@ class CRAM(object):
                 self.knowrob.save_beliefstate(episode_dir+'/beliefstate.owl')
                 self.knowrob.save_action_graph(episode_dir+'/actionlog.owl')
                 self.mongo_save(episode_dir)
-                self.mongo_whipe()
             except OSError as exc:  # Python >2.5
                 rospy.logwarn('failed to export logs, IO error')
             #self.knowrob.save_beliefstate()
