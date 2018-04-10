@@ -344,7 +344,7 @@ class KnowRob(object):
         self.prolog_query(q)
 
     def save_action_graph(self, path=None):
-        if path is not None:
+        if path is None:
             path = '{}/data/action_graph.owl'.format(RosPack().get_path('refills_first_review'))
         q = 'rdf_save(\'{}\', [graph(\'LoggingGraph\')])'.format(path)
         self.prolog_query(q)
