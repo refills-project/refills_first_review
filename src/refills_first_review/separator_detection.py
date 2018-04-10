@@ -89,20 +89,21 @@ class SeparatorClustering(object):
         return separator_cluster.mean(axis=0)
 
     def fake_detection(self):
-        num_fake_separators = 20
-        frame_id = self.knowrob.get_perceived_frame_id(self.current_floor_id)
-        for i in range(num_fake_separators):
-            for j in range(self.min_samples + 1):
-                p = PoseStamped()
-                p.header.frame_id = frame_id
-                if self.hanging:
-                    p.pose.position.x = (i+0.5) / (num_fake_separators-1)
-                else:
-                    p.pose.position.x = i / (num_fake_separators - 1)
-                p.pose.position.y = 0
-                p.pose.orientation = Quaternion(0, 0, 0, 1)
-                if (self.hanging and i < num_fake_separators - 1) or not self.hanging:
-                    self.detections.append([p.pose.position.x, p.pose.position.y, p.pose.position.z])
+        if not self.hanging:
+            num_fake_separators = 5
+            frame_id = self.knowrob.get_perceived_frame_id(self.current_floor_id)
+            for i in range(num_fake_separators):
+                for j in range(self.min_samples + 1):
+                    p = PoseStamped()
+                    p.header.frame_id = frame_id
+                    if self.hanging:
+                        p.pose.position.x = (i+0.5) / (num_fake_separators-1)
+                    else:
+                        p.pose.position.x = i / (num_fake_separators - 1)
+                    p.pose.position.y = 0
+                    p.pose.orientation = Quaternion(0, 0, 0, 1)
+                    if (self.hanging and i < num_fake_separators - 1) or not self.hanging:
+                        self.detections.append([p.pose.position.x, p.pose.position.y, p.pose.position.z])
 
     def hacky(self):
         for i in range(200):
