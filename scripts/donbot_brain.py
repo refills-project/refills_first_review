@@ -105,8 +105,8 @@ class CRAM(object):
                 os.makedirs(episode_dir)
                 self.knowrob.save_beliefstate(episode_dir+'/beliefstate.owl')
                 self.knowrob.save_action_graph(episode_dir+'/actionlog.owl')
-                #self.mongo_save(episode_dir)
-                #self.mongo_whipe()
+                self.mongo_save(episode_dir)
+                self.mongo_whipe()
             except OSError as exc:  # Python >2.5
                 rospy.logwarn('failed to export logs, IO error')
             #self.knowrob.save_beliefstate()
@@ -118,9 +118,14 @@ class CRAM(object):
             rospy.loginfo('preempted')
 
     def mongo_save(self,out_dir):
-        call(['mongodump', '--db REFILLS_0 --out '+out_dir])
+        call(['mongodump',
+              '--db', 'REFILLS_0',
+              '--collection', 'tf',
+              '--out', out_dir])
     def mongo_whipe(self):
-        call(['mongo', "REFILLS_0 --eval 'db.dropDatabase()'"])
+        call(['mongo',
+              'REFILLS_0',
+              '--eval', "'db.dropDatabase()'"])
 
     def detect_baseboards(self):
         rospy.loginfo('shelf baseboard detection requires manuel mode')
