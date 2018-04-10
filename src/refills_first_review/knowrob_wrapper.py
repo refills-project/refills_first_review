@@ -35,22 +35,29 @@ class ActionGraph(object):
         self.parent_node = parent_node
         self.last_sub_action = None
         self.id = id
+    
+    @classmethod
+    def unix_time_seconds(cls):
+        now = rospy.get_rostime()
+        return now.secs + now.nsecs/1000000000.0
 
     @classmethod
     def start_experiment(cls, knowrob, action_type):
-        q = 'cram_start_action(\'{}\', \'\', {}, _, R)'.format(action_type, rospy.get_rostime())
+        q = 'cram_start_action(\'{}\', \'\', {}, _, R)'.format(action_type, ActionGraph.unix_time_seconds())
         id = knowrob.prolog_query(q)[0]['R']
         return cls(knowrob, id=id)
 
     def finish(self):
-        q = 'cram_finish_action({}, {})'.format(self.id, rospy.get_rostime())
+        q = 'cram_finish_action({}, {})'.format(self.id, ActionGraph.unix_time_seconds())
         self.knowrob.prolog_query(q)
         return self.parent_node
 
     def create_thingy(self, action_type):
-        previous_action = self.last_sub_action.id if self.last_sub_action is not None else '_'
+        # FIXME: this messes up the action graph, disabled for now
+        #previous_action = self.last_sub_action.id if self.last_sub_action is not None else '_'
+        previous_action = '_'
         q = 'cram_start_action(\'{}\', \'{}\', {}, {}, R)'.format(action_type, '',
-                                                                  rospy.get_rostime(),
+                                                                  ActionGraph.unix_time_seconds(),
                                                                   previous_action)
         result = self.knowrob.prolog_query(q)[0]['R']
         return result
