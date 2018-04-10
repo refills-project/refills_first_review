@@ -6,10 +6,12 @@ import os
 
 def cb(srv):
     if srv.data:
-        os.system('echo "0" | nc 192.168.102.114 3000')
+        os.system('echo "9" | nc 192.168.102.114 3000')
+        os.system('echo "9" | nc 192.168.102.114 3000')
         os.system('echo "9" | nc 192.168.102.114 3000')
     else:
-        os.system('echo "9" | nc 192.168.102.114 3000')
+        os.system('echo "0" | nc 192.168.102.114 3000')
+        os.system('echo "0" | nc 192.168.102.114 3000')
         os.system('echo "0" | nc 192.168.102.114 3000')
     r = SetBoolResponse()
     r.success = True

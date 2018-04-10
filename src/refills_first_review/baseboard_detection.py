@@ -19,6 +19,7 @@ from refills_first_review.tfwrapper import TfWrapper
 
 MAP = 'map'
 
+MARKER_OFFSET = 0.025
 
 class Shelf(object):
     def __init__(self, number, map_position):
@@ -77,6 +78,7 @@ class Shelf(object):
         a *= (1 - a_length) / 2
         origin = left + a
         origin[2] = 0
+        origin[0] += MARKER_OFFSET
         return origin
 
     def get_orientation(self):
@@ -155,12 +157,13 @@ class BaseboardDetector(object):
                                        msg.transform.translation.z)
             pose.pose.orientation.w = 1
             pose = self.tf.transform_pose(MAP, pose)
-            position = [pose.pose.position.x, pose.pose.position.y, pose.pose.position.z]
-            for shelf in self.shelves:
-                if shelf.add_measurement(number, position):
-                    break
-            else:  # if not break
-                self.shelves.append(Shelf(number, position))
+            if pose is not None:
+                position = [pose.pose.position.x, pose.pose.position.y, pose.pose.position.z]
+                for shelf in self.shelves:
+                    if shelf.add_measurement(number, position):
+                        break
+                else:  # if not break
+                    self.shelves.append(Shelf(number, position))
 
     def publish_as_marker(self):
         # TODO use current frame id
