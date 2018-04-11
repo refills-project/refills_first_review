@@ -65,7 +65,7 @@ class BarcodeDetector(object):
             rospy.loginfo('camera offline; \'detecting\' barcodes anyway')
             self.detect_fake_barcodes()
         self.cluster()
-        self.publish_as_marker()
+        # self.publish_as_marker()
         rospy.loginfo('detected {} barcodes'.format(len(self.barcodes)))
         return self.barcodes
 

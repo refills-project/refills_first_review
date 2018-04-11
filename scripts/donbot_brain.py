@@ -52,7 +52,7 @@ COUNTING_OFFSET = PoseStamped(Header(0, rospy.Time(), ''),
 COUNTING_OFFSET2 = -0.18
 
 # in base_footprint
-FLOOR_SCAN_POSE_BOTTOM = {'trans': [-.15, -.646, 0.177],
+FLOOR_SCAN_POSE_BOTTOM = {'trans': [-.15, -.597, 0.177],
                           'rot': [0, 0.858, -0.514, 0]}
 # in base_footprint
 # FLOOR_SCAN_POSE_REST = {'trans': [-.15, -.645, -0.0],
@@ -92,10 +92,10 @@ class CRAM(object):
             rospy.logerr('only complete scans are supported')
             self._as.set_aborted('only complete scans are supported')
         try:
-            try:
-                self.mongo_whipe()
-            except OSError as exc:  # Python >2.5
-                rospy.logwarn('failed to whipe mongo, IO error')
+            # try:
+            #     self.mongo_whipe()
+            # except OSError as exc:  # Python >2.5
+            #     rospy.logwarn('failed to whipe mongo, IO error')
             
             self.move_arm.drive_pose()
             # TODO scan shelf system
@@ -107,13 +107,14 @@ class CRAM(object):
             self.knowrob.finish_action()
             
             try:
-                data_path = '{}/data/'.format(RosPack().get_path('refills_first_review'))
+                # data_path = '{}/data/'.format(RosPack().get_path('refills_first_review'))
+                data_path = '/tmp'
                 episode_name = str(datetime.date.today()) + '_' + str(time())
                 episode_dir = data_path+episode_name
                 os.makedirs(episode_dir)
                 self.knowrob.save_beliefstate(episode_dir+'/beliefstate.owl')
                 self.knowrob.save_action_graph(episode_dir+'/actions.owl')
-                self.mongo_save(episode_dir)
+                # self.mongo_save(episode_dir)
             except OSError as exc:  # Python >2.5
                 rospy.logwarn('failed to export logs, IO error')
             #self.knowrob.save_beliefstate()
@@ -296,17 +297,18 @@ class CRAM(object):
                 if i != 0:
                     self.knowrob.start_shelf_layer_counting()
 
-                self.move_base.move_absolute_xyz(frame_id,
-                                                 gripper_in_base.pose.position.x + facing_pose.pose.position.x,
-                                                 FLOOR_SCANNING_OFFSET['y'],
-                                                 FLOOR_SCANNING_OFFSET['z'])
+                try:
+                    self.move_base.move_absolute_xyz(frame_id,
+                                                     gripper_in_base.pose.position.x + facing_pose.pose.position.x,
+                                                     FLOOR_SCANNING_OFFSET['y'],
+                                                     FLOOR_SCANNING_OFFSET['z'])
+                except TimeoutError as e:
+                    self.move_base.STOP()
 
                 facing_type = 'hanging' if self.knowrob.is_hanging_foor(floor_id) else 'standing'
                 count = self.robosherlock.count(product, width, left_sep, self.knowrob.get_perceived_frame_id(shelf_id), facing_type)
                 for j in range(count):
                     self.knowrob.add_object(facing_id)
-                # TODO get name of object in facing [medium]
-                # rospy.sleep(0.5)
                 rospy.loginfo('counted {} objects in facing {}'.format(count, facing_id))
                 self.knowrob.finish_action()
 

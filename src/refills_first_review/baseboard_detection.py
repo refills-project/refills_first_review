@@ -57,7 +57,8 @@ class Shelf(object):
         return self.complete
 
     def get_left(self):
-        return np.mean(self.left_measurements, axis=0)
+        left = np.mean(self.left_measurements, axis=0)
+        return left
 
     def get_right(self):
         return np.mean(self.right_measurements, axis=0)
@@ -75,10 +76,9 @@ class Shelf(object):
         a = left - right
         a_length = np.linalg.norm(a)
         a /= a_length
-        a *= (1 - a_length) / 2
+        a *= ((1 - a_length) / 2) - MARKER_OFFSET
         origin = left + a
         origin[2] = 0
-        origin[0] += MARKER_OFFSET
         return origin
 
     def get_orientation(self):
@@ -132,7 +132,7 @@ class BaseboardDetector(object):
     def detect_fake_shelves(self, ids):
         if '0' in ids:
             s1 = Shelf(20, [0.695, -0.59, 0])
-            s1.add_measurement(21, [1.585, -0.59, 0])
+            s1.add_measurement(21, [1.59, -0.59, 0])
             self.shelves.append(s1)
         if '1' in ids:
             s2 = Shelf(22, [1.695, -0.59, 0])
