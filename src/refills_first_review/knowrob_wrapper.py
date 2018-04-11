@@ -48,7 +48,7 @@ class ActionGraph(object):
 
     @classmethod
     def start_experiment(cls, knowrob, action_type):
-        q = 'cram_start_action(\'{}\', \'{}\', _, R)'.format(action_type, ActionGraph.unix_time_seconds())
+        q = 'cram_start_situation(\'{}\', \'{}\', R), rdf_assert(R,knowrob:performedBy,donbot:iai_donbot_robot1, \'LoggingGraph\'), rdf_assert(R,knowrob:performedInMap,iaishop:\'IAIShop_0\', \'LoggingGraph\')'.format(action_type, ActionGraph.unix_time_seconds())
         id = knowrob.prolog_query(q)[0]['R']
         return cls(knowrob, id=id)
 
@@ -58,7 +58,6 @@ class ActionGraph(object):
         return self.parent_node
 
     def create_thingy(self, action_class, action_type):
-        # FIXME: this messes up the action graph, disabled for now
         if self.last_sub_action is not None and self.last_sub_action.type == action_type:
             previous_thing = self.last_sub_action.id
         else:
@@ -377,12 +376,12 @@ class KnowRob(object):
 
     def save_action_graph(self, path=None):
         if path is None:
-            path = '{}/data/action_graph.owl'.format(RosPack().get_path('refills_first_review'))
+            path = '{}/data/actions.owl'.format(RosPack().get_path('refills_first_review'))
         q = 'rdf_save(\'{}\', [graph(\'LoggingGraph\')])'.format(path)
         self.prolog_query(q)
 
     def start_everything(self):
-        a = 'muh#experiment'
+        a = 'http://knowrob.org/kb/knowrob.owl#RobotExperiment'
         self.action_graph = ActionGraph.start_experiment(self, a)
 
     def start_shelf_system_mapping(self, object_acted_on=None):
@@ -481,7 +480,7 @@ class KnowRob(object):
         :param goal_location: pose
         :return:
         """
-        a = 'http://knowrob.org/kb/knowrob_common.owl#HeadMovement'
+        a = 'http://knowrob.org/kb/motions.owl#HeadMovement'
         if self.action_graph is not None:
             self.action_graph = self.action_graph.add_sub_motion(a, goal_location=goal_location)
 
