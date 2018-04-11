@@ -65,7 +65,7 @@ class BarcodeDetector(object):
             rospy.loginfo('camera offline; \'detecting\' barcodes anyway')
             self.detect_fake_barcodes()
         self.cluster()
-        # self.publish_as_marker()
+        self.publish_as_marker()
         rospy.loginfo('detected {} barcodes'.format(len(self.barcodes)))
         return self.barcodes
 
@@ -129,8 +129,8 @@ class BarcodeDetector(object):
                 m.scale = Vector3(1, 1, 1)
                 m.color = ColorRGBA(0, 0, 0, 0)
                 m.mesh_use_embedded_materials = True
-            if mesh_path != '':
-                ma.markers.append(m)
+            # if mesh_path != '':
+            #     ma.markers.append(m)
 
             # text
             m = Marker()

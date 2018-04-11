@@ -47,17 +47,17 @@ FLOOR_DETECTION_OFFSET = {'x': 0.5,
 #                    }
 # in floor_id
 COUNTING_OFFSET = PoseStamped(Header(0, rospy.Time(), ''),
-                              Pose(Point(0.097, -0.32, 0.16),
-                                   Quaternion(-0.748, 0.000, -0.000, 0.664)))
+                              Pose(Point(0.09, -0.328, 0.144),
+                                   Quaternion(-0.748, -0.000, 0.000, 0.663)))
 COUNTING_OFFSET2 = -0.18
 
 # in base_footprint
-FLOOR_SCAN_POSE_BOTTOM = {'trans': [-.15, -.69, 0.177],
+FLOOR_SCAN_POSE_BOTTOM = {'trans': [-.15, -.7, 0.172],
                           'rot': [0, 0.858, -0.514, 0]}
 # in base_footprint
 # FLOOR_SCAN_POSE_REST = {'trans': [-.15, -.645, -0.0],
 #                         'rot': [-0.111, -0.697, 0.699, 0.111]}
-FLOOR_SCAN_POSE_REST = {'trans': [-.15, -.647, 0.0],
+FLOOR_SCAN_POSE_REST = {'trans': [-.15, -.66, 0.0],
                         'rot': [0, 0.7071, -0.7071, 0]}
 SHELF_BASEBOARD = PoseStamped(Header(0, rospy.Time(), 'base_footprint'),
                               Pose(Point(-0.137, -0.68, 0.223),
@@ -196,12 +196,12 @@ class CRAM(object):
         self.robosherlock.start_floor_detection(shelf_id)
         self.knowrob.start_looking_at_location(shelf_id)
         self.move_arm.floor_detection_pose()
-        if self.robosherlock.robosherlock:
+        if self.robosherlock.robosherlock and self.robosherlock.floor_detection:
             rospy.sleep(10)
         self.knowrob.finish_action()
         self.knowrob.start_looking_at_location(shelf_id)
         self.move_arm.floor_detection_pose2()
-        if self.robosherlock.robosherlock:
+        if self.robosherlock.robosherlock and self.robosherlock.floor_detection:
             rospy.sleep(10)
         self.knowrob.finish_action()
         floor_heights = self.robosherlock.stop_floor_detection(shelf_id)
