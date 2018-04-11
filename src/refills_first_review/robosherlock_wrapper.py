@@ -90,6 +90,7 @@ class RoboSherlock(object):
     def start_floor_detection(self, shelf_id):
         self.set_ring_light(False)
         if self.robosherlock and False:
+        # if self.robosherlock:
             req = RSQueryServiceRequest()
             q = {"scan":
                      {"type": "shelf",
@@ -100,6 +101,7 @@ class RoboSherlock(object):
 
     def stop_floor_detection(self, shelf_id):
         if self.robosherlock and False:
+        # if self.robosherlock:
             req = RSQueryServiceRequest()
             q = {'scan':
                      {'type': 'shelf',
@@ -139,7 +141,7 @@ class RoboSherlock(object):
             print(q)
             req = RSQueryServiceRequest()
             req.query = json.dumps(q)
-            result = self.robosherlock_service.call(req, )
+            result = self.robosherlock_service.call(req)
             print(result)
             count = len(result.answer)
         else:

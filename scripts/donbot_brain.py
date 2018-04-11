@@ -39,6 +39,7 @@ FLOOR_SCANNING_OFFSET = {'x': -0.18,
 FLOOR_DETECTION_OFFSET = {'x': 0.5,
                           'y': -1.3,
                           'z': np.pi}
+
 # arm
 # trans in camera_link, rot in base_footprint
 # COUNTING_OFFSET = {'trans': [0.0, -0.15, -0.1],
@@ -48,14 +49,16 @@ FLOOR_DETECTION_OFFSET = {'x': 0.5,
 COUNTING_OFFSET = PoseStamped(Header(0, rospy.Time(), ''),
                               Pose(Point(0.097, -0.37, 0.16),
                                    Quaternion(-0.748, 0.000, -0.000, 0.664)))
-COUNTING_OFFSET2 = -0.15
+COUNTING_OFFSET2 = -0.18
 
 # in base_footprint
 FLOOR_SCAN_POSE_BOTTOM = {'trans': [-.15, -.646, 0.177],
                           'rot': [0, 0.858, -0.514, 0]}
 # in base_footprint
-FLOOR_SCAN_POSE_REST = {'trans': [-.15, -.645, -0.0],
-                        'rot': [-0.111, -0.697, 0.699, 0.111]}
+# FLOOR_SCAN_POSE_REST = {'trans': [-.15, -.645, -0.0],
+#                         'rot': [-0.111, -0.697, 0.699, 0.111]}
+FLOOR_SCAN_POSE_REST = {'trans': [-.15, -.597, 0.0],
+                        'rot': [0, 0.7071, -0.7071, 0]}
 SHELF_BASEBOARD = PoseStamped(Header(0, rospy.Time(), 'base_footprint'),
                               Pose(Point(-0.137, -0.68, 0.223),
                                    Quaternion(-0.000, 0.841, -0.541, 0.000)))
@@ -222,7 +225,6 @@ class CRAM(object):
         self.knowrob.start_move_to_shelf_layer()
 
         self.set_floor_scan_pose(shelf_id, floor_id)
-        self.move_arm.send_cartesian_goal()
         self.move_in_front_of_shelf(shelf_id)
         self.knowrob.finish_action()
 
@@ -235,7 +237,7 @@ class CRAM(object):
 
         try:
             self.knowrob.start_move_to_shelf_frame_end()
-            self.move_base.move_relative([-self.knowrob.get_floor_width()+0.05, 0, 0])
+            self.move_base.move_relative([-self.knowrob.get_floor_width(), 0, 0])
         except TimeoutError as e:
             self.move_base.STOP()
 
@@ -264,6 +266,7 @@ class CRAM(object):
                          Point(pose['trans'][0],
                                pose['trans'][1] - floor_position.pose.position.y,
                                pose['trans'][2] + floor_position.pose.position.z)))
+        self.move_arm.send_cartesian_goal()
 
     def move_in_front_of_shelf(self, shelf_id):
         return self.move_base.move_absolute_xyz(self.knowrob.get_perceived_frame_id(shelf_id),
