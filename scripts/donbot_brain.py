@@ -109,7 +109,7 @@ class CRAM(object):
                 episode_dir = data_path+episode_name
                 os.makedirs(episode_dir)
                 self.knowrob.save_beliefstate(episode_dir+'/beliefstate.owl')
-                self.knowrob.save_action_graph(episode_dir+'/actionlog.owl')
+                self.knowrob.save_action_graph(episode_dir+'/actions.owl')
                 self.mongo_save(episode_dir)
             except OSError as exc:  # Python >2.5
                 rospy.logwarn('failed to export logs, IO error')
