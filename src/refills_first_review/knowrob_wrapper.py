@@ -481,7 +481,7 @@ class KnowRob(object):
         :param goal_location: pose
         :return:
         """
-        a = 'http://knowrob.org/kb/knowrob_common.owl#HeadMovement'
+        a = 'http://knowrob.org/kb/motions.owl#HeadMovement'
         if self.action_graph is not None:
             self.action_graph = self.action_graph.add_sub_motion(a, goal_location=goal_location)
 
