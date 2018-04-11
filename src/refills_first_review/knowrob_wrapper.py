@@ -298,7 +298,7 @@ class KnowRob(object):
         new_floor_height = np.mean([self.tf.transform_pose(
             self.get_perceived_frame_id(floor_id), p).pose.position.z for p in separators])
         current_floor_pose = self.tf.lookup_transform(MAP, self.get_object_frame_id(floor_id))
-        current_floor_pose.pose.position.z += new_floor_height
+        current_floor_pose.pose.position.z += new_floor_height - 0.01
         q = 'belief_at_update(\'{}\', {})'.format(floor_id, self.pose_to_prolog(current_floor_pose))
         self.prolog_query(q)
 

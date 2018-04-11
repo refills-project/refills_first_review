@@ -54,7 +54,7 @@ COUNTING_OFFSET2 = -0.15
 FLOOR_SCAN_POSE_BOTTOM = {'trans': [-.15, -.646, 0.177],
                           'rot': [0, 0.858, -0.514, 0]}
 # in base_footprint
-FLOOR_SCAN_POSE_REST = {'trans': [-.15, -.65, -0.0],
+FLOOR_SCAN_POSE_REST = {'trans': [-.15, -.645, -0.0],
                         'rot': [-0.111, -0.697, 0.699, 0.111]}
 SHELF_BASEBOARD = PoseStamped(Header(0, rospy.Time(), 'base_footprint'),
                               Pose(Point(-0.137, -0.68, 0.223),
@@ -235,7 +235,7 @@ class CRAM(object):
 
         try:
             self.knowrob.start_move_to_shelf_frame_end()
-            self.move_base.move_relative([-self.knowrob.get_floor_width(), 0, 0])
+            self.move_base.move_relative([-self.knowrob.get_floor_width()+0.05, 0, 0])
         except TimeoutError as e:
             self.move_base.STOP()
 
@@ -278,7 +278,8 @@ class CRAM(object):
         goal = deepcopy(COUNTING_OFFSET)
         goal.header.frame_id = self.knowrob.get_perceived_frame_id(floor_id)
         if self.knowrob.is_hanging_foor(floor_id):
-            goal.pose.position.z = -goal.pose.position.z
+            # TODO magic offset
+            goal.pose.position.z = -goal.pose.position.z + 0.05
         goal = self.tf.transform_pose(self.move_arm.root, goal)
         goal.pose.position.x = COUNTING_OFFSET2
         self.move_arm.set_and_send_cartesian_goal(goal)
@@ -297,12 +298,12 @@ class CRAM(object):
                                                  FLOOR_SCANNING_OFFSET['y'],
                                                  FLOOR_SCANNING_OFFSET['z'])
 
-
-                count = self.robosherlock.count(product, width, left_sep, self.knowrob.get_perceived_frame_id(shelf_id), 'standing')
+                facing_type = 'hanging' if self.knowrob.is_hanging_foor(floor_id) else 'standing'
+                count = self.robosherlock.count(product, width, left_sep, self.knowrob.get_perceived_frame_id(shelf_id), facing_type)
                 for j in range(count):
                     self.knowrob.add_object(facing_id)
                 # TODO get name of object in facing [medium]
-                rospy.sleep(0.5)
+                # rospy.sleep(0.5)
                 rospy.loginfo('counted {} objects in facing {}'.format(count, facing_id))
                 self.knowrob.finish_action()
 
