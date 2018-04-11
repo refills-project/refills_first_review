@@ -29,21 +29,26 @@ DETECTED_OBJECT = '\'http://knowrob.org/kb/knowrob.owl#detectedObject\''
 
 
 class ActionGraph(object):
-    def __init__(self, knowrob, parent_node=None, previous_node=None, id=''):
+    Action = 0
+    Motion = 1
+    Event = 2
+
+    def __init__(self, knowrob, parent_node=None, previous_node=None, id='', type=Action):
         self.knowrob = knowrob
         self.previous_node = previous_node
         self.parent_node = parent_node
         self.last_sub_action = None
         self.id = id
-    
+        self.type = type
+
     @classmethod
     def unix_time_seconds(cls):
         now = rospy.get_rostime()
-        return now.secs + now.nsecs/1000000000.0
+        return now.secs + now.nsecs / 1000000000.0
 
     @classmethod
     def start_experiment(cls, knowrob, action_type):
-        q = 'cram_start_action(\'{}\', \'\', {}, _, R)'.format(action_type, ActionGraph.unix_time_seconds())
+        q = 'cram_start_action(\'{}\', \'{}\', _, R)'.format(action_type, ActionGraph.unix_time_seconds())
         id = knowrob.prolog_query(q)[0]['R']
         return cls(knowrob, id=id)
 
@@ -52,20 +57,22 @@ class ActionGraph(object):
         self.knowrob.prolog_query(q)
         return self.parent_node
 
-    def create_thingy(self, action_type):
+    def create_thingy(self, action_class, action_type):
         # FIXME: this messes up the action graph, disabled for now
-        #previous_action = self.last_sub_action.id if self.last_sub_action is not None else '_'
-        previous_action = '_'
-        q = 'cram_start_action(\'{}\', \'{}\', {}, {}, R)'.format(action_type, '',
-                                                                  ActionGraph.unix_time_seconds(),
-                                                                  previous_action)
+        if self.last_sub_action is not None and self.last_sub_action.type == action_type:
+            previous_thing = self.last_sub_action.id
+        else:
+            previous_thing = '_'
+        q = '{}(\'{}\', \'{}\', {}, R)'.format(self.type_to_cram_start(action_type), action_class,
+                                                   str(ActionGraph.unix_time_seconds()),
+                                                   previous_thing)
         result = self.knowrob.prolog_query(q)[0]['R']
         return result
-        # return 'asdf'
 
     def add_sub_thingy(self, action_type, sub_type, object_acted_on=None, goal_location=None, detected_objects=None):
-        new_id = self.create_thingy(action_type)
-        q = 'rdf_assert({}, {}, {}, \'LoggingGraph\')'.format(self.id, sub_type, new_id)
+        new_id = self.create_thingy(action_type, sub_type)
+
+        q = 'rdf_assert({}, {}, {}, \'LoggingGraph\')'.format(self.id, self.type_to_sub(sub_type), new_id)
         self.knowrob.prolog_query(q)
 
         if object_acted_on is not None:
@@ -86,17 +93,33 @@ class ActionGraph(object):
                 self.knowrob.prolog_query(q)
 
         self.last_sub_action = ActionGraph(knowrob=self.knowrob, parent_node=self, previous_node=self.last_sub_action,
-                                           id=new_id)
+                                           id=new_id, type=sub_type)
         return self.last_sub_action
 
     def add_sub_action(self, action_type, object_acted_on=None, goal_location=None, detected_objects=None):
-        return self.add_sub_thingy(action_type, 'knowrob:subAction', object_acted_on, goal_location, detected_objects)
+        return self.add_sub_thingy(action_type, self.Action, object_acted_on, goal_location, detected_objects)
 
     def add_sub_event(self, event_type, object_acted_on=None, goal_location=None, detected_objects=None):
-        return self.add_sub_thingy(event_type, 'knowrob:subEvent', object_acted_on, goal_location, detected_objects)
+        return self.add_sub_thingy(event_type, self.Event, object_acted_on, goal_location, detected_objects)
 
     def add_sub_motion(self, motion_type, object_acted_on=None, goal_location=None, detected_objects=None):
-        return self.add_sub_thingy(motion_type, 'knowrob:subMotion', object_acted_on, goal_location, detected_objects)
+        return self.add_sub_thingy(motion_type, self.Motion, object_acted_on, goal_location, detected_objects)
+
+    def type_to_sub(self, t):
+        if t == self.Action:
+            return 'knowrob:subAction'
+        if t == self.Motion:
+            return 'knowrob:subMotion'
+        if t == self.Event:
+            return 'knowrob:subEvent'
+
+    def type_to_cram_start(self, t):
+        if t == self.Action:
+            return 'cram_start_action'
+        if t == self.Motion:
+            return 'cram_start_motion'
+        if t == self.Event:
+            return 'cram_start_event'
 
     def __str__(self):
         return self.id.split('3')[-1]
@@ -154,7 +177,8 @@ class KnowRob(object):
         return ros_pose
 
     def add_shelf_system(self):
-        q = 'belief_new_object({}, R)'.format(SHELF_SYSTEM)
+        q = 'belief_new_object({}, R), rdf_assert(R, knowrob:describedInMap, iaishop:\'IAIShop_0\', belief_state)'.format(
+            SHELF_SYSTEM)
         shelf_system_id = self.prolog_query(q)[0]['R'].replace('\'', '')
         return shelf_system_id
 
@@ -163,7 +187,7 @@ class KnowRob(object):
         # TODO failure handling
         for name, pose in shelves.items():
             q = 'belief_new_object({}, ID), ' \
-                'rdf_assert(\'{}\', knowrob:properPhysicalParts, ID),' \
+                'rdf_assert(\'{}\', knowrob:properPhysicalParts, ID, belief_state),' \
                 'object_affordance_static_transform(ID, A, [_,_,T,R]),' \
                 'rdfs_individual_of(A, {})'.format(SHELF_METER, shelf_system_id, PERCEPTION_AFFORDANCE)
             solutions = self.prolog_query(q)[0]
@@ -283,7 +307,8 @@ class KnowRob(object):
             self.prolog_query(q)
 
         for barcode, p in barcodes.items():
-            q = 'belief_shelf_barcode_at(\'{}\', {}, dan(\'{}\'), norm({}), _)'.format(floor_id, BARCODE, barcode, p.pose.position.x)
+            q = 'belief_shelf_barcode_at(\'{}\', {}, dan(\'{}\'), norm({}), _)'.format(floor_id, BARCODE, barcode,
+                                                                                       p.pose.position.x)
             self.prolog_query(q)
 
         self.start_shelf_separator_perception(self.get_separators(floor_id))
@@ -306,7 +331,6 @@ class KnowRob(object):
         solutions = self.prolog_query(q)
         return solutions[0]['Ss']
 
-
     def add_mounting_bars_and_barcodes(self, floor_id, separators, barcodes):
         if len(separators) > 0:
             for p in separators:
@@ -318,7 +342,8 @@ class KnowRob(object):
                 self.prolog_query(q)
 
         for barcode, p in barcodes.items():
-            q = 'belief_shelf_barcode_at(\'{}\', {}, dan(\'{}\'), norm({}), _)'.format(floor_id, BARCODE, barcode, p.pose.position.x)
+            q = 'belief_shelf_barcode_at(\'{}\', {}, dan(\'{}\'), norm({}), _)'.format(floor_id, BARCODE, barcode,
+                                                                                       p.pose.position.x)
             self.prolog_query(q)
 
         self.start_shelf_bar_perception(self.get_mounting_bars(floor_id))
@@ -328,9 +353,9 @@ class KnowRob(object):
 
     def get_facings(self, floor_id):
         q = 'findall([F, P, W, L], (shelf_facing(\'{}\', F), ' \
-                                'shelf_facing_product_type(F,P), ' \
-                                'comp_facingWidth(F,literal(type(_, W))), ' \
-                                '(rdf_has(F, shop:leftSeparator, L); rdf_has(F, shop:mountingBarOfFacing, L))),' \
+            'shelf_facing_product_type(F,P), ' \
+            'comp_facingWidth(F,literal(type(_, W))), ' \
+            '(rdf_has(F, shop:leftSeparator, L); rdf_has(F, shop:mountingBarOfFacing, L))),' \
             'Facings).'.format(floor_id)
         solutions = self.prolog_query(q)[0]
         facings = {}
