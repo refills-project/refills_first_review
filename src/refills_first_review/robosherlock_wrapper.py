@@ -94,7 +94,7 @@ class RoboSherlock(object):
             req = RSQueryServiceRequest()
             q = {"scan":
                      {"type": "shelf",
-                      "location": shelf_id,
+                      "location": self.knowrob.get_perceived_frame_id(shelf_id),
                       "command": "start"}}
             req.query = json.dumps(q)
             self.robosherlock_service.call(req)
@@ -104,7 +104,7 @@ class RoboSherlock(object):
             req = RSQueryServiceRequest()
             q = {'scan':
                      {'type': 'shelf',
-                      'location': '',
+                      'location': self.knowrob.get_perceived_frame_id(shelf_id),
                       'command': 'stop'}}
             req.query = json.dumps(q)
             result = self.robosherlock_service.call(req)

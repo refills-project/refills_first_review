@@ -337,7 +337,7 @@ class KnowRob(object):
                 self.prolog_query(q)
         else:
             for barcode, p in barcodes.items():
-                q = 'belief_shelf_part_at(\'{}\', {}, norm({}), _)'.format(floor_id, MOUNTING_BAR, p.pose.position.x)
+                q = 'belief_shelf_part_at(\'{}\', {}, norm({}), _)'.format(floor_id, MOUNTING_BAR, p.pose.position.x+0.02)
                 self.prolog_query(q)
 
         for barcode, p in barcodes.items():

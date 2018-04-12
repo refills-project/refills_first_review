@@ -27,8 +27,8 @@ class SeparatorClustering(object):
         self.map_frame_id = 'map'
         self.separator_maker_color = ColorRGBA(.8, .8, .8, .8)
         self.separator_maker_scale = Vector3(.01, .5, .05)
-        self.min_samples = 4
-        self.max_dist = 0.025
+        self.min_samples = 3
+        self.max_dist = 0.02
         self.hanging = False
 
     def start_listening_separators(self, floor_id, topic='/separator_marker_detector_node/data_out'):
@@ -59,7 +59,7 @@ class SeparatorClustering(object):
         frame_id = self.knowrob.get_perceived_frame_id(self.current_floor_id)
         for separator in separator_array.separators:
             p = self.tf.transform_pose(frame_id, separator.separator_pose)
-            if p is not None and 0.03 <= p.pose.position.x and p.pose.position.x <= 0.97:
+            if p is not None and 0.03 <= p.pose.position.x and p.pose.position.x <= 0.96:
                 self.detections.append([p.pose.position.x, p.pose.position.y, p.pose.position.z])
 
     def cluster(self):

@@ -47,8 +47,8 @@ FLOOR_DETECTION_OFFSET = {'x': 0.5,
 #                    }
 # in floor_id
 COUNTING_OFFSET = PoseStamped(Header(0, rospy.Time(), ''),
-                              Pose(Point(0.097, -0.319, 0.146),
-                                   Quaternion(-0.748, 0.000, -0.000, 0.664)))
+                              Pose(Point(0.097, -0.322, 0.174),
+                                   Quaternion(-0.771, -0.000, -0.000, 0.637)))
 COUNTING_OFFSET2 = -0.18
 
 # in base_footprint
@@ -57,7 +57,7 @@ FLOOR_SCAN_POSE_BOTTOM = {'trans': [-.152, -.692, 0.154],
 # in base_footprint
 # FLOOR_SCAN_POSE_REST = {'trans': [-.15, -.645, -0.0],
 #                         'rot': [-0.111, -0.697, 0.699, 0.111]}
-FLOOR_SCAN_POSE_REST = {'trans': [-.152, -.648, 0.002],
+FLOOR_SCAN_POSE_REST = {'trans': [-.152, -.64, 0.022],
                         'rot': [0.007, 0.723, -0.691, -0.000]}
 SHELF_BASEBOARD = PoseStamped(Header(0, rospy.Time(), 'base_footprint'),
                               Pose(Point(-0.137, -0.72, 0.223),
@@ -69,7 +69,6 @@ ACTION_NAME = 'scanning_action'
 class CRAM(object):
     def __init__(self):
         # TODO use paramserver [low]
-        # TODO live logging [high]
         self._as = SimpleActionServer(ACTION_NAME, ScanningAction, execute_cb=self.action_cb, auto_start=False)
         self._as.register_preempt_callback(self.preempt_cb)
         self.knowrob = KnowRob()
@@ -297,13 +296,13 @@ class CRAM(object):
                 if i != 0:
                     self.knowrob.start_shelf_layer_counting()
 
-                try:
-                    self.move_base.move_absolute_xyz(frame_id,
-                                                     gripper_in_base.pose.position.x + facing_pose.pose.position.x,
-                                                     FLOOR_SCANNING_OFFSET['y'],
-                                                     FLOOR_SCANNING_OFFSET['z'])
-                except TimeoutError as e:
-                    self.move_base.STOP()
+                # try:
+                self.move_base.move_absolute_xyz(frame_id,
+                                                 gripper_in_base.pose.position.x + facing_pose.pose.position.x,
+                                                 FLOOR_SCANNING_OFFSET['y'],
+                                                 FLOOR_SCANNING_OFFSET['z'])
+                # except TimeoutError as e:
+                #     self.move_base.STOP()
 
                 facing_type = 'hanging' if self.knowrob.is_hanging_foor(floor_id) else 'standing'
                 count = self.robosherlock.count(product, width, left_sep, self.knowrob.get_perceived_frame_id(shelf_id), facing_type)
