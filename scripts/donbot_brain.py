@@ -47,20 +47,20 @@ FLOOR_DETECTION_OFFSET = {'x': 0.5,
 #                    }
 # in floor_id
 COUNTING_OFFSET = PoseStamped(Header(0, rospy.Time(), ''),
-                              Pose(Point(0.09, -0.328, 0.144),
-                                   Quaternion(-0.748, -0.000, 0.000, 0.663)))
+                              Pose(Point(0.097, -0.319, 0.146),
+                                   Quaternion(-0.748, 0.000, -0.000, 0.664)))
 COUNTING_OFFSET2 = -0.18
 
 # in base_footprint
-FLOOR_SCAN_POSE_BOTTOM = {'trans': [-.15, -.7, 0.172],
-                          'rot': [0, 0.858, -0.514, 0]}
+FLOOR_SCAN_POSE_BOTTOM = {'trans': [-.152, -.692, 0.154],
+                          'rot': [0.007, 0.869, -0.495, -0.002]}
 # in base_footprint
 # FLOOR_SCAN_POSE_REST = {'trans': [-.15, -.645, -0.0],
 #                         'rot': [-0.111, -0.697, 0.699, 0.111]}
-FLOOR_SCAN_POSE_REST = {'trans': [-.15, -.66, 0.0],
-                        'rot': [0, 0.7071, -0.7071, 0]}
+FLOOR_SCAN_POSE_REST = {'trans': [-.152, -.648, 0.002],
+                        'rot': [0.007, 0.723, -0.691, -0.000]}
 SHELF_BASEBOARD = PoseStamped(Header(0, rospy.Time(), 'base_footprint'),
-                              Pose(Point(-0.137, -0.68, 0.223),
+                              Pose(Point(-0.137, -0.72, 0.223),
                                    Quaternion(-0.000, 0.841, -0.541, 0.000)))
 
 ACTION_NAME = 'scanning_action'
