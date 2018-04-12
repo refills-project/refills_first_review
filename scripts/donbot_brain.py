@@ -57,8 +57,8 @@ FLOOR_SCAN_POSE_BOTTOM = {'trans': [-.152, -.692, 0.154],
 # in base_footprint
 # FLOOR_SCAN_POSE_REST = {'trans': [-.15, -.645, -0.0],
 #                         'rot': [-0.111, -0.697, 0.699, 0.111]}
-FLOOR_SCAN_POSE_REST = {'trans': [-.152, -.64, 0.022],
-                        'rot': [0.007, 0.723, -0.691, -0.000]}
+FLOOR_SCAN_POSE_REST = {'trans': [-.152, -.63, -0.022],
+                        'rot': [-0.007, -0.684, 0.729, 0.000]}
 SHELF_BASEBOARD = PoseStamped(Header(0, rospy.Time(), 'base_footprint'),
                               Pose(Point(-0.137, -0.72, 0.223),
                                    Quaternion(-0.000, 0.841, -0.541, 0.000)))
