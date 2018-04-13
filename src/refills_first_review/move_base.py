@@ -28,7 +28,7 @@ class MoveBase(object):
         # self.min_dist_front = deque(maxlen=4)
         # self.min_dist_back = deque(maxlen=4)
         rospy.sleep(0.5)
-        self.timeout = 30
+        self.timeout = 40
         self.dist_to_shelfs = 1.4
 
     def move_absolute(self, target_pose):

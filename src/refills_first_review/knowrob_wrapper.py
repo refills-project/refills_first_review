@@ -32,6 +32,7 @@ class ActionGraph(object):
     Action = 0
     Motion = 1
     Event = 2
+    logging = False
 
     def __init__(self, knowrob, parent_node=None, previous_node=None, id='', type=Action):
         self.knowrob = knowrob
@@ -49,12 +50,14 @@ class ActionGraph(object):
     @classmethod
     def start_experiment(cls, knowrob, action_type):
         q = 'cram_start_situation(\'{}\', \'{}\', R), rdf_assert(R,knowrob:performedBy,donbot:iai_donbot_robot1, \'LoggingGraph\'), rdf_assert(R,knowrob:performedInMap,iaishop:\'IAIShop_0\', \'LoggingGraph\')'.format(action_type, ActionGraph.unix_time_seconds())
+        # if cls.logging:
         id = knowrob.prolog_query(q)[0]['R']
         return cls(knowrob, id=id)
 
     def finish(self):
         q = 'cram_finish_action({}, {})'.format(self.id, ActionGraph.unix_time_seconds())
-        self.knowrob.prolog_query(q)
+        if self.logging:
+            self.knowrob.prolog_query(q)
         return self.parent_node
 
     def create_thingy(self, action_class, action_type):
@@ -65,31 +68,35 @@ class ActionGraph(object):
         q = '{}(\'{}\', \'{}\', {}, R)'.format(self.type_to_cram_start(action_type), action_class,
                                                    str(ActionGraph.unix_time_seconds()),
                                                    previous_thing)
-        result = self.knowrob.prolog_query(q)[0]['R']
-        return result
+        if self.logging:
+            result = self.knowrob.prolog_query(q)[0]['R']
+            return result
+        else:
+            return ''
 
     def add_sub_thingy(self, action_type, sub_type, object_acted_on=None, goal_location=None, detected_objects=None):
         new_id = self.create_thingy(action_type, sub_type)
 
         q = 'rdf_assert({}, {}, {}, \'LoggingGraph\')'.format(self.id, self.type_to_sub(sub_type), new_id)
-        self.knowrob.prolog_query(q)
+        if self.logging:
+            self.knowrob.prolog_query(q)
 
-        if object_acted_on is not None:
-            q = 'rdf_assert({}, {}, \'{}\', \'LoggingGraph\')'.format(new_id, OBJECT_ACTED_ON, object_acted_on)
-            self.knowrob.prolog_query(q)
-        if goal_location is not None:
-            if '[' in goal_location:
-                translation = eval(goal_location.split(', ')[-2])
-                rotation = eval(goal_location.split(', ')[-1][:-1])
-                q = 'owl_instance_from_class(knowrob:\'Pose\', [pose=({}, {})], Id),' \
-                    'rdf_assert({}, {}, Id, \'LoggingGraph\')'.format(translation, rotation, new_id, GOAL_LOCATION)
-            else:
-                q = 'rdf_assert({}, {}, \'{}\', \'LoggingGraph\')'.format(new_id, GOAL_LOCATION, goal_location)
-            self.knowrob.prolog_query(q)
-        if detected_objects is not None:
-            for detected_object in detected_objects:
-                q = 'rdf_assert({}, {}, \'{}\', \'LoggingGraph\')'.format(new_id, DETECTED_OBJECT, detected_object)
+            if object_acted_on is not None:
+                q = 'rdf_assert({}, {}, \'{}\', \'LoggingGraph\')'.format(new_id, OBJECT_ACTED_ON, object_acted_on)
                 self.knowrob.prolog_query(q)
+            if goal_location is not None:
+                if '[' in goal_location:
+                    translation = eval(goal_location.split(', ')[-2])
+                    rotation = eval(goal_location.split(', ')[-1][:-1])
+                    q = 'owl_instance_from_class(knowrob:\'Pose\', [pose=({}, {})], Id),' \
+                        'rdf_assert({}, {}, Id, \'LoggingGraph\')'.format(translation, rotation, new_id, GOAL_LOCATION)
+                else:
+                    q = 'rdf_assert({}, {}, \'{}\', \'LoggingGraph\')'.format(new_id, GOAL_LOCATION, goal_location)
+                self.knowrob.prolog_query(q)
+            if detected_objects is not None:
+                for detected_object in detected_objects:
+                    q = 'rdf_assert({}, {}, \'{}\', \'LoggingGraph\')'.format(new_id, DETECTED_OBJECT, detected_object)
+                    self.knowrob.prolog_query(q)
 
         self.last_sub_action = ActionGraph(knowrob=self.knowrob, parent_node=self, previous_node=self.last_sub_action,
                                            id=new_id, type=sub_type)
@@ -139,6 +146,7 @@ class KnowRob(object):
         self.query_lock = Lock()
 
     def prolog_query(self, q):
+        print('before lock')
         with self.query_lock:
             print('sending {}'.format(q))
             query = self.prolog.query(q)

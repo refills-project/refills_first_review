@@ -142,10 +142,10 @@ class BaseboardDetector(object):
             s3 = Shelf(24, [2.695, -0.59, 0])
             s3.add_measurement(25, [3.585, -0.59, 0])
             self.shelves.append(s3)
-        if '3' in ids:
-            s4 = Shelf(26, [3.695, -0.59, 0])
-            s4.add_measurement(27, [4.585, -0.59, 0])
-            self.shelves.append(s4)
+        # if '3' in ids:
+        #     s4 = Shelf(26, [3.695, -0.59, 0])
+        #     s4.add_measurement(27, [4.585, -0.59, 0])
+        #     self.shelves.append(s4)
 
     def cb(self, data):
         for msg in data.transforms:
