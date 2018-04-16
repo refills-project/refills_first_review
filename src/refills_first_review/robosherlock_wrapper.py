@@ -100,11 +100,12 @@ class RoboSherlock(object):
             self.robosherlock_service.call(req)
 
     def stop_floor_detection(self, shelf_id):
+        shelf_frame = self.knowrob.get_perceived_frame_id(shelf_id)
         if self.robosherlock and self.floor_detection:
             req = RSQueryServiceRequest()
             q = {'scan':
                      {'type': 'shelf',
-                      'location': self.knowrob.get_perceived_frame_id(shelf_id),
+                      'location': shelf_frame,
                       'command': 'stop'}}
             req.query = json.dumps(q)
             result = self.robosherlock_service.call(req)
@@ -112,7 +113,7 @@ class RoboSherlock(object):
             for floor in result.answer:
                 p = message_converter.convert_dictionary_to_ros_message('geometry_msgs/PoseStamped',
                                                                         json.loads(floor)['poses'][0]['pose_stamped'])
-                p = self.tf.transform_pose(shelf_id, p)
+                p = self.tf.transform_pose(shelf_frame, p)
                 floors.append([0,
                                p.pose.position.y,
                                p.pose.position.z])
@@ -122,10 +123,10 @@ class RoboSherlock(object):
             print('detected shelfs at heights: {}'.format(floors))
 
             # TODO remove this if floor detection works
-            shelf_pose = self.tf.lookup_transform(MAP, self.knowrob.get_perceived_frame_id(shelf_id))
+            shelf_pose = self.tf.lookup_transform(MAP, shelf_frame)
             floors = FLOORS[int(shelf_pose.pose.position.x)]
         else:
-            shelf_pose = self.tf.lookup_transform(MAP, self.knowrob.get_perceived_frame_id(shelf_id))
+            shelf_pose = self.tf.lookup_transform(MAP, shelf_frame)
             floors = FLOORS[int(shelf_pose.pose.position.x)]
         return floors
 
