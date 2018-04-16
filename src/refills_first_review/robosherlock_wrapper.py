@@ -35,7 +35,7 @@ class RoboSherlock(object):
         self.baseboard_detection = BaseboardDetector()
         self.barcode_detection = BarcodeDetector(knowrob)
         self.ring_light_srv = rospy.ServiceProxy('ring_light_switch/setbool', SetBool)
-        self.floor_detection = False
+        self.floor_detection = True
         try:
             rospy.wait_for_service('/RoboSherlock/json_query', 1)
             self.robosherlock_service = rospy.ServiceProxy('/RoboSherlock/json_query',
@@ -120,6 +120,10 @@ class RoboSherlock(object):
             floors = [x for x in floors if x[-1] > 0.3]
             floors = [FLOORS[0][0]] + floors
             print('detected shelfs at heights: {}'.format(floors))
+
+            # TODO remove this if floor detection works
+            shelf_pose = self.tf.lookup_transform(MAP, self.knowrob.get_perceived_frame_id(shelf_id))
+            floors = FLOORS[int(shelf_pose.pose.position.x)]
         else:
             shelf_pose = self.tf.lookup_transform(MAP, self.knowrob.get_perceived_frame_id(shelf_id))
             floors = FLOORS[int(shelf_pose.pose.position.x)]
