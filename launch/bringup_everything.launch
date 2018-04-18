@@ -5,24 +5,4 @@
   <node pkg="topic_tools" type="relay" name="relay_refills_camera1" args="/refills_wrist_camera/image_color/compressed /refills_wrist_camera2/image_color/compressed"/>
   <node pkg="topic_tools" type="relay" name="relay_refills_camera2" args="/refills_wrist_camera/camera_info /refills_wrist_camera2/camera_info"/>
   <node pkg="topic_tools" type="relay" name="relay_qr_codes" args="rosrun topic_tools relay /ros_markers/tf /tf"/>
-
-  <!-- Bring together the different joint state messages -->
-  <node pkg="joint_state_publisher" type="joint_state_publisher"
-  name="joint_state_publisher" output="screen">
-    <rosparam param="source_list">
-    - base/joint_states
-    - arm/joint_states
-    </rosparam>
-    <rosparam param="zeros">
-    'odom_x_joint': 0.0
-    'odom_y_joint': 0.0
-    'odom_z_joint': 0.0
-    'gripper_base_gripper_left_joint': 0.0
-    'gripper_joint': 0.0
-    </rosparam>
-
-    <param name="rate" value="120"/>
-    <param name="use_gui" value="False"/>
-
-  </node>
 </launch>
