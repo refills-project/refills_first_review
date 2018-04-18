@@ -4,7 +4,6 @@
   <include file="$(find iai_donbot_bringup)/launch/ptgrey_refills_fast2.launch"/>
   <include file="$(find realsense_ros_camera)/launch/realsense_donbot.launch"/>
   <include file="$(find refills_first_review)/launch/chillitags_baseboard.launch"/>
-<!--  <include file="$(find rs_refills)/launch/rs_refills.launch"/-->
   <node pkg="refills_first_review" type="ring_light_switch.py" name="ring_light_switch"/> 
 
   <!-- Bring together the different joint state messages -->
