@@ -27,7 +27,7 @@ class SeparatorClustering(object):
         self.map_frame_id = 'map'
         self.separator_maker_color = ColorRGBA(.8, .8, .8, .8)
         self.separator_maker_scale = Vector3(.01, .5, .05)
-        self.min_samples = 2
+        self.min_samples = 1
         self.max_dist = 0.02
         self.hanging = False
 
@@ -59,7 +59,7 @@ class SeparatorClustering(object):
         frame_id = self.knowrob.get_perceived_frame_id(self.current_floor_id)
         for separator in separator_array.separators:
             p = self.tf.transform_pose(frame_id, separator.separator_pose)
-            if p is not None and 0.03 <= p.pose.position.x and p.pose.position.x <= 0.96:
+            if p is not None and 0.04 <= p.pose.position.x and p.pose.position.x <= 0.96:
                 self.detections.append([p.pose.position.x, p.pose.position.y, p.pose.position.z])
 
     def cluster(self):
