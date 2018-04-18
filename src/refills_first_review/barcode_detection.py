@@ -17,7 +17,7 @@ from std_msgs.msg import ColorRGBA, Header
 from tf.transformations import quaternion_from_matrix, quaternion_from_euler
 from tf2_msgs.msg import TFMessage
 from visualization_msgs.msg import Marker, MarkerArray
-
+from rospkg import RosPack
 from refills_first_review.tfwrapper import TfWrapper
 
 MAP = 'map'
@@ -44,12 +44,7 @@ class BarcodeDetector(object):
         self.text_scale = Vector3(0, 0, .05)
 
     def load_barcode_to_mesh_map(self):
-        try:
-            self.barcode_to_mesh = json.load(open('../data/barcode_to_mesh.json'))
-        except IOError:
-            self.barcode_to_mesh = json.load(open('../../data/barcode_to_mesh.json'))
-
-        self.offline_i = 0
+        self.barcode_to_mesh = json.load(open(RosPack().get_path('refills_first_review')+'/data/barcode_to_mesh.json'))
 
     def start_listening(self, shelf_id, floor_id):
         self.shelf_id = shelf_id

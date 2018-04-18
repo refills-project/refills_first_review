@@ -296,13 +296,14 @@ class CRAM(object):
                 if i != 0:
                     self.knowrob.start_shelf_layer_counting()
 
-                # try:
-                self.move_base.move_absolute_xyz(frame_id,
-                                                 gripper_in_base.pose.position.x + facing_pose.pose.position.x,
-                                                 FLOOR_SCANNING_OFFSET['y'],
-                                                 FLOOR_SCANNING_OFFSET['z'])
-                # except TimeoutError as e:
-                #     self.move_base.STOP()
+                try:
+                    self.move_base.move_absolute_xyz(frame_id,
+                                                     gripper_in_base.pose.position.x + facing_pose.pose.position.x,
+                                                     FLOOR_SCANNING_OFFSET['y'],
+                                                     FLOOR_SCANNING_OFFSET['z'])
+                except TimeoutError as e:
+                    traceback.print_exc()
+                    self.move_base.STOP()
 
                 facing_type = 'hanging' if self.knowrob.is_hanging_foor(floor_id) else 'standing'
                 count = self.robosherlock.count(product, width, left_sep, self.knowrob.get_perceived_frame_id(shelf_id), facing_type)
