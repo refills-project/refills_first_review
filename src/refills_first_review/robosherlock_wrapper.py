@@ -42,11 +42,10 @@ class RoboSherlock(object):
                                                            RSQueryService)
             self.robosherlock = True
         except ROSException as e:
-            rospy.logwarn('robosherlock not available')
+            rospy.logwarn('robosherlock not available; activating fake perception')
             self.robosherlock = False
 
         self.tf = TfWrapper()
-        rospy.logwarn('robosherlock not fully integrated')
 
     def set_ring_light(self, value=True):
         req = SetBoolRequest()

@@ -106,13 +106,16 @@ class CRAM(object):
             self.knowrob.finish_action()
             
             try:
-                # data_path = '{}/data/'.format(RosPack().get_path('refills_first_review'))
-                data_path = '/tmp'
+                rospy.loginfo('DONE')
+                rospy.loginfo('exporting logs')
+                data_path = '{}/data/'.format(RosPack().get_path('refills_first_review'))
+                # data_path = '/tmp'
                 episode_name = str(datetime.date.today()) + '_' + str(time())
                 episode_dir = data_path+episode_name
                 os.makedirs(episode_dir)
                 self.knowrob.save_beliefstate(episode_dir+'/beliefstate.owl')
                 self.knowrob.save_action_graph(episode_dir+'/actions.owl')
+                rospy.loginfo('logs exported')
                 # self.mongo_save(episode_dir)
             except OSError as exc:  # Python >2.5
                 rospy.logwarn('failed to export logs, IO error')
@@ -123,6 +126,7 @@ class CRAM(object):
         except Exception as e:
             traceback.print_exc()
             rospy.loginfo('preempted')
+        rospy.loginfo('waiting for scanning action goal')
 
     def mongo_save(self,out_dir):
         call(['mongodump',
@@ -136,26 +140,27 @@ class CRAM(object):
 
     def detect_baseboards(self):
         rospy.loginfo('shelf baseboard detection requires manuel mode')
-        rospy.loginfo('move to free space plx')
-        cmd = raw_input('done? [y]')
-        while raw_input('add new shelf system? [y]') == 'y':
+        rospy.loginfo('move to free space plx, THE ARM WILL MOVE!!!')
+        cmd = raw_input('done? [y/n]')
+        while raw_input('add new shelf system? [y/n]') == 'y':
             shelf_system_id = self.knowrob.add_shelf_system()
             rospy.loginfo('added shelf system {}'.format(shelf_system_id))
             rospy.loginfo('moving arm to baseboard scanning pose')
             self.move_arm.pre_baseboard_pose()
             self.move_arm.set_and_send_cartesian_goal(SHELF_BASEBOARD)
-            rospy.loginfo('scan all shelf baseboard plx')
+            rospy.loginfo('scan QR codes plx')
             self.robosherlock.start_baseboard_detection()
-
-            cmd = raw_input('finished scanning shelf system? [y]')
+            cmd = 'n'
+            while cmd != 'y' and cmd != '1337':
+                cmd = raw_input('finished scanning shelf system? [y/n]') 
             if cmd == '1337':
                 rospy.logwarn('skipping baseboard detection')
                 self.robosherlock.baseboard_detection.detect_fake_shelves('0123')
 
             shelves = self.robosherlock.stop_baseboard_detection()
             self.knowrob.add_shelves(shelf_system_id, shelves)
-        rospy.loginfo('MAKE SURE NOTHING IS CLOSE!!!!11elf')
-        cmd = raw_input('rdy? [y]')
+        rospy.loginfo('MAKE SURE NOTHING IS CLOSE!!!! THE ARM WILL MOVE')
+        cmd = raw_input('rdy? [y/n]')
         if cmd == 'y':
             self.move_arm.drive_pose()
         else:
@@ -324,7 +329,7 @@ if __name__ == '__main__':
     cram = CRAM()
     # cram.STOP()
     try:
-        cmd = raw_input('start demo? [y]')
+        cmd = raw_input('start demo? [y/n]')
         if cmd == 'y':
             rospy.loginfo('starting REFILLS scenario 1 demo')
             cram.detect_baseboards()

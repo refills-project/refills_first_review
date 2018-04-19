@@ -146,18 +146,18 @@ class KnowRob(object):
         self.query_lock = Lock()
 
     def prolog_query(self, q):
-        print('before lock')
+        # print('before lock')
         with self.query_lock:
-            print('sending {}'.format(q))
+            # print('sending {}'.format(q))
             query = self.prolog.query(q)
             solutions = [x if x != {} else True for x in query.solutions()]
-            if len(solutions) > 1:
-                rospy.logwarn('{} returned more than one result'.format(q))
-            elif len(solutions) == 0:
-                rospy.logwarn('{} returned nothing'.format(q))
+            # if len(solutions) > 1:
+            #     rospy.logwarn('{} returned more than one result'.format(q))
+            # elif len(solutions) == 0:
+            #     rospy.logwarn('{} returned nothing'.format(q))
             query.finish()
-            print('solutions {}'.format(solutions))
-            print('----------------------')
+            # print('solutions {}'.format(solutions))
+            # print('----------------------')
             return solutions
 
     def remove_http_shit(self, s):
