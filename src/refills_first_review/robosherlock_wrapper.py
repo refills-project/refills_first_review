@@ -149,7 +149,7 @@ class RoboSherlock(object):
             print(result)
             count = len(result.answer)
         else:
-            count = int(np.random.random() * 4)+1
+            count = int(np.random.random() * 4)
         # self.set_ring_light(True)
         return count
 
