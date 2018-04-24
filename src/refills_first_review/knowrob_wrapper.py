@@ -88,7 +88,7 @@ class ActionGraph(object):
                 if '[' in goal_location:
                     translation = eval(goal_location.split(', ')[-2])
                     rotation = eval(goal_location.split(', ')[-1][:-1])
-                    q = 'owl_instance_from_class(knowrob:\'Pose\', [pose=({}, {})], Id),' \
+                    q = 'belief_new_pose(({}, {}), Id),' \
                         'rdf_assert({}, {}, Id, \'LoggingGraph\')'.format(translation, rotation, new_id, GOAL_LOCATION)
                 else:
                     q = 'rdf_assert({}, {}, \'{}\', \'LoggingGraph\')'.format(new_id, GOAL_LOCATION, goal_location)
