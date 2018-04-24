@@ -88,7 +88,7 @@ class ActionGraph(object):
                 if '[' in goal_location:
                     translation = eval(goal_location.split(', ')[-2])
                     rotation = eval(goal_location.split(', ')[-1][:-1])
-                    q = 'owl_instance_from_class(knowrob:\'Pose\', [pose=({}, {})], Id),' \
+                    q = 'belief_new_pose(({}, {}), Id),' \
                         'rdf_assert({}, {}, Id, \'LoggingGraph\')'.format(translation, rotation, new_id, GOAL_LOCATION)
                 else:
                     q = 'rdf_assert({}, {}, \'{}\', \'LoggingGraph\')'.format(new_id, GOAL_LOCATION, goal_location)
@@ -146,18 +146,18 @@ class KnowRob(object):
         self.query_lock = Lock()
 
     def prolog_query(self, q):
-        print('before lock')
+        # print('before lock')
         with self.query_lock:
-            print('sending {}'.format(q))
+            # print('sending {}'.format(q))
             query = self.prolog.query(q)
             solutions = [x if x != {} else True for x in query.solutions()]
-            if len(solutions) > 1:
-                rospy.logwarn('{} returned more than one result'.format(q))
-            elif len(solutions) == 0:
-                rospy.logwarn('{} returned nothing'.format(q))
+            # if len(solutions) > 1:
+            #     rospy.logwarn('{} returned more than one result'.format(q))
+            # elif len(solutions) == 0:
+            #     rospy.logwarn('{} returned nothing'.format(q))
             query.finish()
-            print('solutions {}'.format(solutions))
-            print('----------------------')
+            # print('solutions {}'.format(solutions))
+            # print('----------------------')
             return solutions
 
     def remove_http_shit(self, s):
