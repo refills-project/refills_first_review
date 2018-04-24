@@ -42,6 +42,8 @@ class BarcodeDetector(object):
         self.text_color = ColorRGBA(1, 1, 1, 1)
         self.object_scale = Vector3(.05, .05, .05)
         self.text_scale = Vector3(0, 0, .05)
+        self.listen = False
+        self.sub = rospy.Subscriber(self.detector_topic, Barcode, self.cb, queue_size=100)
 
     def load_barcode_to_mesh_map(self):
         self.barcode_to_mesh = json.load(open(RosPack().get_path('refills_first_review')+'/data/barcode_to_mesh.json'))
@@ -50,10 +52,12 @@ class BarcodeDetector(object):
         self.shelf_id = shelf_id
         self.floor_id = floor_id
         self.barcodes = defaultdict(list)
-        self.sub = rospy.Subscriber(self.detector_topic, Barcode, self.cb, queue_size=100)
+        self.listen = True
+        # self.sub = rospy.Subscriber(self.detector_topic, Barcode, self.cb, queue_size=100)
 
     def stop_listening(self):
-        self.sub.unregister()
+        # self.sub.unregister()
+        self.listen = False
         try:
             rospy.wait_for_message('/refills_wrist_camera/image_color', rospy.AnyMsg, timeout=1)
         except ROSException as e:
@@ -89,12 +93,13 @@ class BarcodeDetector(object):
             self.barcodes[barcode] = p
 
     def cb(self, data):
-        p = self.tf.transform_pose(MAP, data.barcode_pose)
-        if p is not None:
-            p.header.stamp = rospy.Time()
-            p = self.tf.transform_pose(self.knowrob.get_perceived_frame_id(self.floor_id), p)
-            if p.pose.position.x > 0.0 and p.pose.position.x < 1.0:
-                self.barcodes[data.barcode[1:-1]].append(p)
+        if self.listen:
+            p = self.tf.transform_pose(MAP, data.barcode_pose)
+            if p is not None:
+                p.header.stamp = rospy.Time()
+                p = self.tf.transform_pose(self.knowrob.get_perceived_frame_id(self.floor_id), p)
+                if p.pose.position.x > 0.0 and p.pose.position.x < 1.0:
+                    self.barcodes[data.barcode[1:-1]].append(p)
 
     def publish_as_marker(self):
         ma = MarkerArray()

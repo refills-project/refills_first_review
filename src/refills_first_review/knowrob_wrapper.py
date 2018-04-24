@@ -32,7 +32,7 @@ class ActionGraph(object):
     Action = 0
     Motion = 1
     Event = 2
-    logging = False
+    logging = True
 
     def __init__(self, knowrob, parent_node=None, previous_node=None, id='', type=Action):
         self.knowrob = knowrob
@@ -148,7 +148,7 @@ class KnowRob(object):
     def prolog_query(self, q):
         # print('before lock')
         with self.query_lock:
-            # print('sending {}'.format(q))
+            print('sending {}'.format(q))
             query = self.prolog.query(q)
             solutions = [x if x != {} else True for x in query.solutions()]
             # if len(solutions) > 1:
@@ -156,8 +156,8 @@ class KnowRob(object):
             # elif len(solutions) == 0:
             #     rospy.logwarn('{} returned nothing'.format(q))
             query.finish()
-            # print('solutions {}'.format(solutions))
-            # print('----------------------')
+            print('solutions {}'.format(solutions))
+            print('----------------------')
             return solutions
 
     def remove_http_shit(self, s):

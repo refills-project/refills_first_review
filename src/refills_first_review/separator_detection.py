@@ -30,15 +30,16 @@ class SeparatorClustering(object):
         self.min_samples = 1
         self.max_dist = 0.02
         self.hanging = False
+        self.listen = False
+        self.separator_sub = rospy.Subscriber('/separator_marker_detector_node/data_out', SeparatorArray, self.separator_cb,
+                                              queue_size=10)
 
     def start_listening_separators(self, floor_id, topic='/separator_marker_detector_node/data_out'):
         self.hanging = False
         # self.topic = topic
         self.current_floor_id = floor_id
-
+        self.listen = True
         self.detections = []
-        self.separator_sub = rospy.Subscriber(topic, SeparatorArray, self.separator_cb,
-                                              queue_size=10)
         self.marker_ns = 'separator_{}'.format(floor_id)
 
     def start_listening_mounting_bars(self, floor_id):
@@ -46,7 +47,8 @@ class SeparatorClustering(object):
         self.hanging = True
 
     def stop_listening(self):
-        self.separator_sub.unregister()
+        self.listen = False
+        # self.separator_sub.unregister()
         try:
             rospy.wait_for_message('/refills_wrist_camera/image_color', rospy.AnyMsg, timeout=1)
         except ROSException as e:
@@ -56,11 +58,12 @@ class SeparatorClustering(object):
         return separators
 
     def separator_cb(self, separator_array):
-        frame_id = self.knowrob.get_perceived_frame_id(self.current_floor_id)
-        for separator in separator_array.separators:
-            p = self.tf.transform_pose(frame_id, separator.separator_pose)
-            if p is not None and 0.04 <= p.pose.position.x and p.pose.position.x <= 0.96:
-                self.detections.append([p.pose.position.x, p.pose.position.y, p.pose.position.z])
+        if self.listen:
+            frame_id = self.knowrob.get_perceived_frame_id(self.current_floor_id)
+            for separator in separator_array.separators:
+                p = self.tf.transform_pose(frame_id, separator.separator_pose)
+                if p is not None and 0.04 <= p.pose.position.x and p.pose.position.x <= 0.96:
+                    self.detections.append([p.pose.position.x, p.pose.position.y, p.pose.position.z])
 
     def cluster(self):
         if not self.hanging:
