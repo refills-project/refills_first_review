@@ -41,9 +41,15 @@ class GroundTruth:
             return
 
         if parent_frame_name not in self.root.allChildren:
-            print(current_frame.name + "\n")
-            for child in current_frame.allChildren:
-                print(child + "\n")
+        	print("parent " + parent_frame_name + " does not exist")
+        	return
+            #print(current_frame.name + "\n")
+            #for child in current_frame.allChildren:
+            #    print(child + "\n")
+
+
+        if child_frame_name in self.root.allChildren:
+            print("Frame " + child_frame_name + " exists already")
             return
 
         while(current_frame.name != parent_frame_name):
@@ -139,20 +145,108 @@ def instantiate_ground_truth():
     gt.addFrame("shelf_layer1", "507923", Transform(0.917, -0.028, -0.035))
 
 
-    gt.addFrame("shelf_layer2", "shelf_layer3", Transform(1,0,5))
+    gt.addFrame("shelf_layer1", "shelf_layer2", Transform(0, 0.102, 0.4))
+    gt.addFrame("shelf_layer2", "shelf_layer2_seperator_1", Transform(0.03, 0.01, 0.005))
+    gt.addFrame("shelf_layer2", "shelf_layer2_seperator_2", Transform(0.155, 0.01, 0.005))
+    gt.addFrame("shelf_layer2", "shelf_layer2_seperator_3", Transform(0.218, 0.01, 0.005))
+    gt.addFrame("shelf_layer2", "shelf_layer2_seperator_4", Transform(0.28, 0.01, 0.005))
+    gt.addFrame("shelf_layer2", "shelf_layer2_seperator_5", Transform(0.361, 0.01, 0.005))
+    gt.addFrame("shelf_layer2", "shelf_layer2_seperator_6", Transform(0.561, 0.01, 0.005))
+    gt.addFrame("shelf_layer2", "shelf_layer2_seperator_7", Transform(0.609, 0.01, 0.005))
+    gt.addFrame("shelf_layer2", "shelf_layer2_seperator_8", Transform(0.749, 0.01, 0.005))
+    gt.addFrame("shelf_layer2", "shelf_layer2_seperator_9", Transform(0.858, 0.01, 0.005))
+    gt.addFrame("shelf_layer2", "shelf_layer2_seperator_10", Transform(0.98, 0.01, 0.005))
 
-    gt.addFrame("shelf_layer3", "shelf_layer4", Transform(1,0,5))
+    gt.addFrame("shelf_layer2", "500183", Transform(0.065, -0.028, -0.035))
+    gt.addFrame("shelf_layer2", "46088", Transform(0.197, -0.028, -0.035))
+    gt.addFrame("shelf_layer2", "262289", Transform(0.302, -0.028, -0.035))
+    gt.addFrame("shelf_layer2", "010055", Transform(0.414, -0.028, -0.035))
+    gt.addFrame("shelf_layer2", "015652", Transform(0.538, -0.028, -0.035))
+    gt.addFrame("shelf_layer2", "516937", Transform(0.664, -0.028, -0.035))
+    gt.addFrame("shelf_layer2", "125481", Transform(0.906, -0.028, -0.035))
 
-    gt.addFrame("shelf_layer4", "shelf_layer5", Transform(1,0,5))
 
-    gt.addFrame("shelf_layer5", "shelf_layer6", Transform(1,0,5))
-    #gt.addFrame("root", Frame("asd", Transform(1,0,0)))
-    #gt.addFrame("root", Frame("dasa", Transform(1,1,0)))
-    #gt.addFrame("asd", Frame("gsffsg", Transform(1,0,5)))
-    gt.printTree(gt.root)
-    #t = gt.getTransform("root","asd")
-    t = gt.getTransform("root","shelf_layer1")
-    print(str(t))
+    gt.addFrame("shelf_layer2", "shelf_layer3", Transform(0 ,0, 0.34))
+    gt.addFrame("shelf_layer3", "shelf_layer3_seperator_1", Transform(0.030, 0.01, 0.005))
+    gt.addFrame("shelf_layer3", "shelf_layer3_seperator_2", Transform(0.150, 0.01, 0.005))
+    gt.addFrame("shelf_layer3", "shelf_layer3_seperator_3", Transform(0.364, 0.01, 0.005))
+    gt.addFrame("shelf_layer3", "shelf_layer3_seperator_4", Transform(0.513, 0.01, 0.005))
+    gt.addFrame("shelf_layer3", "shelf_layer3_seperator_5", Transform(0.771, 0.01, 0.005))
+    gt.addFrame("shelf_layer3", "shelf_layer3_seperator_6", Transform(0.857, 0.01, 0.005))
+    gt.addFrame("shelf_layer3", "shelf_layer3_seperator_7", Transform(0.999, 0.01, 0.005))
+
+    gt.addFrame("shelf_layer3", "004728", Transform(0.056, -0.028, -0.035))
+    gt.addFrame("shelf_layer3", "196068", Transform(0.240, -0.028, -0.035))
+    gt.addFrame("shelf_layer3", "332384", Transform(0.426, -0.028, -0.035))
+    gt.addFrame("shelf_layer3", "523129", Transform(0.584, -0.028, -0.035))
+    gt.addFrame("shelf_layer3", "424929", Transform(0.772, -0.028, -0.035))
+    gt.addFrame("shelf_layer3", "235542", Transform(0.902, -0.028, -0.035))
+
+    gt.addFrame("shelf_layer3", "shelf_layer4", Transform(0 ,0, 0.298))
+    gt.addFrame("shelf_layer4", "shelf_layer4_seperator_1", Transform(0.030, 0.01, 0.005))
+    gt.addFrame("shelf_layer4", "shelf_layer4_seperator_2", Transform(0.181, 0.01, 0.005))
+    gt.addFrame("shelf_layer4", "shelf_layer4_seperator_3", Transform(0.294, 0.01, 0.005))
+    gt.addFrame("shelf_layer4", "shelf_layer4_seperator_4", Transform(0.433, 0.01, 0.005))
+    gt.addFrame("shelf_layer4", "shelf_layer4_seperator_5", Transform(0.625, 0.01, 0.005))
+    gt.addFrame("shelf_layer4", "shelf_layer4_seperator_6", Transform(0.824, 0.01, 0.005))
+    gt.addFrame("shelf_layer4", "shelf_layer4_seperator_7", Transform(0.990, 0.01, 0.005))
+
+    gt.addFrame("shelf_layer4", "114035", Transform(0.068, -0.028, -0.035))
+    gt.addFrame("shelf_layer4", "176671", Transform(0.217, -0.028, -0.035))
+    gt.addFrame("shelf_layer4", "422771", Transform(0.328, -0.028, -0.035))
+    gt.addFrame("shelf_layer4", "331372", Transform(0.498, -0.028, -0.035))
+    gt.addFrame("shelf_layer4", "377954", Transform(0.701, -0.028, -0.035))
+    gt.addFrame("shelf_layer4", "227003", Transform(0.874, -0.028, -0.035))
+
+    gt.addFrame("shelf_layer4", "shelf_layer5", Transform(0 ,0, 0.255))
+    gt.addFrame("shelf_layer5", "shelf_layer5_seperator_1", Transform(0.030, 0.01, 0.005))
+    gt.addFrame("shelf_layer5", "shelf_layer5_seperator_2", Transform(0.109, 0.01, 0.005))
+    gt.addFrame("shelf_layer5", "shelf_layer5_seperator_3", Transform(0.308, 0.01, 0.005))
+    gt.addFrame("shelf_layer5", "shelf_layer5_seperator_4", Transform(0.571, 0.01, 0.005))
+    gt.addFrame("shelf_layer5", "shelf_layer5_seperator_5", Transform(0.774, 0.01, 0.005))
+    gt.addFrame("shelf_layer5", "shelf_layer5_seperator_6", Transform(0.980, 0.01, 0.005))
+
+    gt.addFrame("shelf_layer5", "200563", Transform(0.030, -0.028, -0.035))
+    gt.addFrame("shelf_layer5", "447600", Transform(0.186, -0.028, -0.035))
+    gt.addFrame("shelf_layer5", "501155", Transform(0.412, -0.028, -0.035))
+    gt.addFrame("shelf_layer5", "501156", Transform(0.662, -0.028, -0.035))
+    gt.addFrame("shelf_layer5", "534910", Transform(0.861, -0.028, -0.035))
+   
+
+    gt.addFrame("shelf_layer5", "shelf_layer6", Transform(0 ,0, 0.338))
+    gt.addFrame("shelf_layer6", "shelf_layer6_seperator_1", Transform(0.030, 0.01, 0.005))
+    gt.addFrame("shelf_layer6", "shelf_layer6_seperator_2", Transform(0.111, 0.01, 0.005))
+    gt.addFrame("shelf_layer6", "shelf_layer6_seperator_3", Transform(0.201, 0.01, 0.005))
+    gt.addFrame("shelf_layer6", "shelf_layer6_seperator_4", Transform(0.282, 0.01, 0.005))
+    gt.addFrame("shelf_layer6", "shelf_layer6_seperator_5", Transform(0.358, 0.01, 0.005))
+    gt.addFrame("shelf_layer6", "shelf_layer6_seperator_6", Transform(0.425, 0.01, 0.005))
+    gt.addFrame("shelf_layer6", "shelf_layer6_seperator_7", Transform(0.513, 0.01, 0.005))
+    gt.addFrame("shelf_layer6", "shelf_layer6_seperator_8", Transform(0.648, 0.01, 0.005))
+    gt.addFrame("shelf_layer6", "shelf_layer6_seperator_9", Transform(0.728, 0.01, 0.005))
+    gt.addFrame("shelf_layer6", "shelf_layer6_seperator_10", Transform(0.814, 0.01, 0.005))
+    gt.addFrame("shelf_layer6", "shelf_layer6_seperator_11", Transform(0.886, 0.01, 0.005))
+    gt.addFrame("shelf_layer6", "shelf_layer6_seperator_12", Transform(0.982, 0.01, 0.005))
+
+    gt.addFrame("shelf_layer6", "305553", Transform(0.044, -0.028, -0.035))
+    gt.addFrame("shelf_layer6", "503131", Transform(0.140, -0.028, -0.035))
+    gt.addFrame("shelf_layer6", "333192", Transform(0.219, -0.028, -0.035))
+    gt.addFrame("shelf_layer6", "333140", Transform(0.306, -0.028, -0.035))
+    gt.addFrame("shelf_layer6", "050081", Transform(0.371, -0.028, -0.035))
+    gt.addFrame("shelf_layer6", "454259", Transform(0.453, -0.028, -0.035))
+    gt.addFrame("shelf_layer6", "048180", Transform(0.565, -0.028, -0.035))
+    gt.addFrame("shelf_layer6", "046445", Transform(0.670, -0.028, -0.035))
+    gt.addFrame("shelf_layer6", "500124", Transform(0.755, -0.028, -0.035))
+    gt.addFrame("shelf_layer6", "333154", Transform(0.837, -0.028, -0.035))
+    gt.addFrame("shelf_layer6", "023130", Transform(0.923, -0.028, -0.035))
+
+    #gt.printTree(gt.root)
+    t1 = gt.getTransform("shelf1_root","023130")
+    t2 = gt.getTransform("305553","500124")
+    t3 = gt.getTransform("shelf_layer5_seperator_3","shelf_layer3")
+    #t = gt.getTransform("root","shelf_layer1")
+    print(str(t1))
+    print(str(t2))
+    print(str(t3))
     # TODO(Kevin): please complete me; feel free to add as many helper functions as you need
     pass
 
