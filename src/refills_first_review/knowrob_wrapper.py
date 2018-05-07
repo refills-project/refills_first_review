@@ -49,8 +49,9 @@ class ActionGraph(object):
 
     @classmethod
     def start_experiment(cls, knowrob, action_type):
-        q = 'cram_start_situation(\'{}\', \'{}\', R), rdf_assert(R,knowrob:performedBy,donbot:iai_donbot_robot1, \'LoggingGraph\'), rdf_assert(R,knowrob:performedInMap,iaishop:\'IAIShop_0\', \'LoggingGraph\')'.format(action_type, ActionGraph.unix_time_seconds())
-        # if cls.logging:
+        q = 'cram_start_situation(\'{}\', \'{}\', R), ' \
+            'rdf_assert(R,knowrob:performedBy,donbot:iai_donbot_robot1, \'LoggingGraph\'), ' \
+            'rdf_assert(R,knowrob:performedInMap,iaishop:\'IAIShop_0\', \'LoggingGraph\')'.format(action_type, ActionGraph.unix_time_seconds())
         id = knowrob.prolog_query(q)[0]['R']
         return cls(knowrob, id=id)
 
@@ -133,7 +134,6 @@ class ActionGraph(object):
 
 class KnowRob(object):
     def __init__(self):
-        # TODO implement all the things [high]
         # TODO use paramserver [low]
         self.floors = {}
         self.shelf_ids = []
@@ -142,20 +142,16 @@ class KnowRob(object):
         self.action_graph = None
         self.tf = TfWrapper()
         self.prolog = json_prolog.Prolog()
-        self.prolog.wait_for_service()
         self.query_lock = Lock()
 
     def prolog_query(self, q):
-        # print('before lock')
         with self.query_lock:
             print('sending {}'.format(q))
-            query = self.prolog.query(q)
-            solutions = [x if x != {} else True for x in query.solutions()]
+            solutions = [x if x != {} else True for x in self.prolog.query(q).solutions()]
             # if len(solutions) > 1:
             #     rospy.logwarn('{} returned more than one result'.format(q))
             # elif len(solutions) == 0:
             #     rospy.logwarn('{} returned nothing'.format(q))
-            query.finish()
             print('solutions {}'.format(solutions))
             print('----------------------')
             return solutions

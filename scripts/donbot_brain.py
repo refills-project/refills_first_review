@@ -4,6 +4,7 @@ from __future__ import print_function, division
 
 import traceback
 import numpy as np
+from pymongo import MongoClient
 from time import time
 import datetime
 import os
@@ -69,6 +70,7 @@ ACTION_NAME = 'scanning_action'
 class CRAM(object):
     def __init__(self):
         # TODO use paramserver [low]
+        self.mongo_client = MongoClient('localhost')
         self._as = SimpleActionServer(ACTION_NAME, ScanningAction, execute_cb=self.action_cb, auto_start=False)
         self._as.register_preempt_callback(self.preempt_cb)
         self.knowrob = KnowRob()
@@ -91,10 +93,10 @@ class CRAM(object):
             rospy.logerr('only complete scans are supported')
             self._as.set_aborted('only complete scans are supported')
         try:
-            # try:
-            #     self.mongo_whipe()
-            # except OSError as exc:  # Python >2.5
-            #     rospy.logwarn('failed to whipe mongo, IO error')
+            try:
+                self.mongo_wipe()
+            except OSError as exc:  # Python >2.5
+                rospy.logwarn('failed to wipe mongo, IO error')
             
             self.move_arm.drive_pose()
             # TODO scan shelf system
@@ -109,14 +111,13 @@ class CRAM(object):
                 rospy.loginfo('DONE')
                 rospy.loginfo('exporting logs')
                 data_path = '{}/data/'.format(RosPack().get_path('refills_first_review'))
-                # data_path = '/tmp'
                 episode_name = str(datetime.date.today()) + '_' + str(time())
                 episode_dir = data_path+episode_name
                 os.makedirs(episode_dir)
                 self.knowrob.save_beliefstate(episode_dir+'/beliefstate.owl')
                 self.knowrob.save_action_graph(episode_dir+'/actions.owl')
                 rospy.loginfo('logs exported')
-                # self.mongo_save(episode_dir)
+                self.mongo_save(episode_dir)
             except OSError as exc:  # Python >2.5
                 rospy.logwarn('failed to export logs, IO error')
             #self.knowrob.save_beliefstate()
@@ -128,15 +129,15 @@ class CRAM(object):
             rospy.loginfo('preempted')
         rospy.loginfo('waiting for scanning action goal')
 
-    def mongo_save(self,out_dir):
-        call(['mongodump',
-              '--db', 'REFILLS_0',
-              '--collection', 'tf',
-              '--out', out_dir])
-    def mongo_whipe(self):
-        call(['mongo',
-              'REFILLS_0',
-              '--eval', "'db.dropDatabase()'"])
+    def mongo_save(self, out_dir):
+        os.system('mongodump --db REFILLS_0 --collection tf --out {}'.format(out_dir))
+        # call(['mongodump',
+        #       '--db', 'REFILLS_0',
+        #       '--collection', 'tf',
+        #       '--out', out_dir])
+
+    def mongo_wipe(self):
+        self.mongo_client.drop_database('REFILLS_0')
 
     def detect_baseboards(self):
         rospy.loginfo('shelf baseboard detection requires manuel mode')
