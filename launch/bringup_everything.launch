@@ -2,7 +2,7 @@
   <include file="$(find refills_first_review)/launch/bringup_donbot.launch"/>
   <include file="$(find rs_refills)/launch/rs_refills.launch"/>
   <include file="$(find knowrob_refills)/launch/knowrob_refills.launch"/>
-  <node pkg="topic_tools" type="relay" name="relay_refills_camera1" args="/refills_wrist_camera/image_color/compressed /refills_wrist_camera2/image_color/compressed"/>
-  <node pkg="topic_tools" type="relay" name="relay_refills_camera2" args="/refills_wrist_camera/camera_info /refills_wrist_camera2/camera_info"/>
+  <!-- node pkg="topic_tools" type="relay" name="relay_refills_camera1" args="/refills_wrist_camera/image_color/compressed /refills_wrist_camera2/image_color/compressed"/-->
+  <!-- node pkg="topic_tools" type="relay" name="relay_refills_camera2" args="/refills_wrist_camera/camera_info /refills_wrist_camera2/camera_info"/-->
   <node pkg="topic_tools" type="relay" name="relay_qr_codes" args=" /ros_markers/tf /tf"/>
 </launch>
