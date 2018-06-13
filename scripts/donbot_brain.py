@@ -32,13 +32,13 @@ from refills_first_review.robosherlock_wrapper import RoboSherlock
 from refills_first_review.tfwrapper import TfWrapper
 
 #in shelf_id
-FLOOR_SCANNING_OFFSET = {'x': -0.18,
-                         'y': -1.04,
+FLOOR_SCANNING_OFFSET = {'x': -0.28,
+                         'y': -1.02,
                          'z': np.pi}
 
 # shelf id
-FLOOR_DETECTION_OFFSET = {'x': 0.5,
-                          'y': -1.3,
+FLOOR_DETECTION_OFFSET = {'x': 0.4,
+                          'y': -1.28,
                           'z': np.pi}
 
 # arm
@@ -50,18 +50,18 @@ FLOOR_DETECTION_OFFSET = {'x': 0.5,
 COUNTING_OFFSET = PoseStamped(Header(0, rospy.Time(), ''),
                               Pose(Point(0.097, -0.322, 0.174),
                                    Quaternion(-0.771, -0.000, -0.000, 0.637)))
-COUNTING_OFFSET2 = -0.18
+COUNTING_OFFSET2 = -0.54
 
 # in base_footprint
-FLOOR_SCAN_POSE_BOTTOM = {'trans': [-.152, -.772, 0.154],
+FLOOR_SCAN_POSE_BOTTOM = {'trans': [-.512, -1.022, -0.008],
                           'rot': [0.007, 0.869, -0.495, -0.002]}
 # in base_footprint
 # FLOOR_SCAN_POSE_REST = {'trans': [-.15, -.645, -0.0],
 #                         'rot': [-0.111, -0.697, 0.699, 0.111]}
-FLOOR_SCAN_POSE_REST = {'trans': [-.152, -.71, -0.022],
+FLOOR_SCAN_POSE_REST = {'trans': [-.512, -.96, -0.182],
                         'rot': [-0.007, -0.684, 0.729, 0.000]}
-SHELF_BASEBOARD = PoseStamped(Header(0, rospy.Time(), 'base_footprint'),
-                              Pose(Point(-0.137, -0.72, 0.223),
+SHELF_BASEBOARD = PoseStamped(Header(0, rospy.Time(), 'base_link'),
+                              Pose(Point(-0.497, -0.970, 0.063),
                                    Quaternion(-0.000, 0.841, -0.541, 0.000)))
 
 ACTION_NAME = 'scanning_action'
@@ -296,7 +296,7 @@ class CRAM(object):
             self.move_base.move_relative([self.knowrob.get_floor_width(), 0, 0])
         else:
             frame_id = self.knowrob.get_perceived_frame_id(shelf_id)
-            gripper_in_base = self.tf.lookup_transform(self.move_arm.root, self.move_arm.tip)
+            gripper_in_base = self.tf.lookup_transform('base_footprint', self.move_arm.tip)
             for i, (facing_id, (facing_pose, product, width, left_sep)) in enumerate(
                     reversed(sorted(facings.items(), key=lambda (k, v): v[0].pose.position.x))):
                 if i != 0:

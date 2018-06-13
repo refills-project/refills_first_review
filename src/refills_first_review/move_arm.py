@@ -16,7 +16,7 @@ class GiskardWrapper(object):
         self.client.wait_for_server()
         rospy.loginfo('connected to {}'.format(giskard_action_name))
         self.tip = 'camera_link'
-        self.root = 'base_footprint'
+        self.root = 'base_link'
 
         self.muh = rospy.Publisher('giskard_goal_pose', PoseStamped, queue_size=10)
 
