@@ -6,6 +6,9 @@ from rospkg import RosPack
 import rospy
 from geometry_msgs.msg import PoseStamped, Point, Quaternion
 import numpy as np
+
+from visualization_msgs.msg import Marker
+
 from json_prolog import json_prolog
 from refills_first_review.tfwrapper import TfWrapper
 
@@ -27,6 +30,7 @@ OBJECT_ACTED_ON = '\'http://knowrob.org/kb/knowrob.owl#objectActedOn\''
 GOAL_LOCATION = '\'http://knowrob.org/kb/knowrob.owl#goalLocation\''
 DETECTED_OBJECT = '\'http://knowrob.org/kb/knowrob.owl#detectedObject\''
 
+action_tree = []
 
 class ActionGraph(object):
     Action = 0
@@ -41,6 +45,7 @@ class ActionGraph(object):
         self.last_sub_action = None
         self.id = id
         self.type = type
+        self.status_pub = rospy.Publisher('visualization_marker', Marker, queue_size=10)
 
     @classmethod
     def unix_time_seconds(cls):
@@ -59,9 +64,13 @@ class ActionGraph(object):
         q = 'cram_finish_action({}, {})'.format(self.id, ActionGraph.unix_time_seconds())
         if self.logging:
             self.knowrob.prolog_query(q)
+        global action_tree # type: list
+        action_tree.pop(-1)
+        self.make_status_text()
         return self.parent_node
 
     def create_thingy(self, action_class, action_type):
+        global action_tree
         if self.last_sub_action is not None and self.last_sub_action.type == action_type:
             previous_thing = self.last_sub_action.id
         else:
@@ -99,6 +108,8 @@ class ActionGraph(object):
                     q = 'rdf_assert({}, {}, \'{}\', \'LoggingGraph\')'.format(new_id, DETECTED_OBJECT, detected_object)
                     self.knowrob.prolog_query(q)
 
+        action_tree.append([action_type, object_acted_on])
+        self.make_status_text()
         self.last_sub_action = ActionGraph(knowrob=self.knowrob, parent_node=self, previous_node=self.last_sub_action,
                                            id=new_id, type=sub_type)
         return self.last_sub_action
@@ -131,6 +142,35 @@ class ActionGraph(object):
     def __str__(self):
         return self.id.split('3')[-1]
 
+    def make_status_text(self):
+        m = Marker()
+        m.header.frame_id = 'base_footprint'
+        m.pose.position.z = 1.5
+        m.ns = 'action_graph'
+        m.id = 1337
+        m.action = Marker.ADD
+        m.type = Marker.TEXT_VIEW_FACING
+        m.scale.z = 0.1
+        m.color.a = 1
+        m.color.r = 1
+        m.frame_locked = True
+        global action_tree
+        text = ''
+        for i, ts in enumerate(action_tree):
+            if i > 0:
+                text += '\n' + '--' * i
+            t = ''
+            for j, item in enumerate(ts):
+                if item is None:
+                    continue
+                if j > 0:
+                    t += ': '
+                if '#' in item:
+                    item = item.split('#')[-1]
+                t += item
+            text += t
+        m.text = text
+        self.status_pub.publish(m)
 
 class KnowRob(object):
     def __init__(self):
