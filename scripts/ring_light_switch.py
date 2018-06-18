@@ -5,6 +5,7 @@ from std_srvs.srv import SetBool, SetBoolResponse
 import os
 
 def cb(srv):
+    global msg, echo_to_bit, expected_result, ring_light_state, number_of_retries
     r = SetBoolResponse()
     next_state = 0
     if srv.data:
