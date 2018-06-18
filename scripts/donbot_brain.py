@@ -32,13 +32,13 @@ from refills_first_review.robosherlock_wrapper import RoboSherlock
 from refills_first_review.tfwrapper import TfWrapper
 
 #in shelf_id
-FLOOR_SCANNING_OFFSET = {'x': -0.28,
-                         'y': -1.02,
+FLOOR_SCANNING_OFFSET = {'x': -0.34,
+                         'y': -1.085,
                          'z': np.pi}
 
 # shelf id
 FLOOR_DETECTION_OFFSET = {'x': 0.4,
-                          'y': -1.28,
+                          'y': -1.3,
                           'z': np.pi}
 
 # arm
@@ -48,7 +48,7 @@ FLOOR_DETECTION_OFFSET = {'x': 0.4,
 #                    }
 # in floor_id
 COUNTING_OFFSET = PoseStamped(Header(0, rospy.Time(), ''),
-                              Pose(Point(0.097, -0.322, 0.174),
+                              Pose(Point(0.097, -0.322, 0.154),
                                    Quaternion(-0.771, -0.000, -0.000, 0.637)))
 COUNTING_OFFSET2 = -0.54
 
@@ -243,7 +243,7 @@ class CRAM(object):
 
         try:
             self.knowrob.start_move_to_shelf_frame_end()
-            self.move_base.move_relative([-self.knowrob.get_floor_width(), 0, 0])
+            self.move_base.move_relative([-self.knowrob.get_floor_width(), 0, 0], retry=False)
         except TimeoutError as e:
             self.move_base.STOP()
 
@@ -281,6 +281,7 @@ class CRAM(object):
                                                 FLOOR_SCANNING_OFFSET['z'])
 
     def count_floor(self, shelf_id, floor_id):
+        # TODO do absolute base movements
         rospy.loginfo('counting objects on floor {}'.format(floor_id))
         self.knowrob.start_shelf_layer_counting()
         facings = self.knowrob.get_facings(floor_id)
@@ -306,7 +307,7 @@ class CRAM(object):
                     self.move_base.move_absolute_xyz(frame_id,
                                                      gripper_in_base.pose.position.x + facing_pose.pose.position.x,
                                                      FLOOR_SCANNING_OFFSET['y'],
-                                                     FLOOR_SCANNING_OFFSET['z'])
+                                                     FLOOR_SCANNING_OFFSET['z'], retry=False)
                 except TimeoutError as e:
                     traceback.print_exc()
                     self.move_base.STOP()
