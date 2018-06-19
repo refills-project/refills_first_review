@@ -22,6 +22,8 @@ def cb(srv):
                     r.success = True
                     ring_light_state = next_state
                     break
+                else:
+                    rospy.logwarn('Failed to change ring light state, retrying')
             else:
                 r.success = False
         else:
@@ -42,10 +44,10 @@ echo_to_bit = {
     9: 255
     }
 ring_light_lock = Lock()
-msg_template = 'echo "{}" | nc 192.168.102.114 3000 -w 2'
+msg_template = 'echo "{}" | nc 192.168.102.114 3000 -w 1'
 expected_result_template = 'Setting light to: {}\n'
 ring_light_state = None
-number_of_retries = 7
+number_of_retries = 1000
 
 rospy.init_node('ring_light_switch')
 s = rospy.Service('~setbool', SetBool, cb)
