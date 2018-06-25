@@ -31,14 +31,16 @@ from refills_first_review.robosherlock_wrapper import RoboSherlock
 # shelf id
 from refills_first_review.tfwrapper import TfWrapper
 
+dist_to_shelf = 0.2
+
 #in shelf_id
 FLOOR_SCANNING_OFFSET = {'x': -0.34,
-                         'y': -1.085,
+                         'y': -(1.085+dist_to_shelf),
                          'z': np.pi}
 
 # shelf id
 FLOOR_DETECTION_OFFSET = {'x': 0.4,
-                          'y': -1.3,
+                          'y': -(1.3),
                           'z': np.pi}
 
 # arm
@@ -48,7 +50,7 @@ FLOOR_DETECTION_OFFSET = {'x': 0.4,
 #                    }
 # in floor_id
 COUNTING_OFFSET = PoseStamped(Header(0, rospy.Time(), ''),
-                              Pose(Point(0.097, -0.322, 0.154),
+                              Pose(Point(0.097, -(0.322+dist_to_shelf), 0.154),
                                    Quaternion(-0.771, -0.000, -0.000, 0.637)))
 COUNTING_OFFSET2 = -0.54
 
