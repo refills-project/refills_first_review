@@ -65,7 +65,8 @@ class ActionGraph(object):
         if self.logging:
             self.knowrob.prolog_query(q)
         global action_tree # type: list
-        action_tree.pop(-1)
+        if len(action_tree) > 0:
+	    action_tree.pop(-1)
         self.make_status_text()
         return self.parent_node
 
