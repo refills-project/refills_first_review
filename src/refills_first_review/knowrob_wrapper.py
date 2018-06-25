@@ -171,7 +171,8 @@ class ActionGraph(object):
                 t += item
             text += t
         m.text = text
-        self.status_pub.publish(m)
+        if m.text != '':
+            self.status_pub.publish(m)
 
 class KnowRob(object):
     def __init__(self):
