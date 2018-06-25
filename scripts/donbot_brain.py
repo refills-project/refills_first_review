@@ -31,7 +31,7 @@ from refills_first_review.robosherlock_wrapper import RoboSherlock
 # shelf id
 from refills_first_review.tfwrapper import TfWrapper
 
-dist_to_shelf = 0.2
+dist_to_shelf = 0.0
 
 #in shelf_id
 FLOOR_SCANNING_OFFSET = {'x': -0.34,
