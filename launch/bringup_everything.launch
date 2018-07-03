@@ -1,5 +1,9 @@
 <launch>
-  <include file="$(find refills_first_review)/launch/bringup_donbot.launch"/>
+  <arg name="enable_pointcloud" default="False" />
+
+  <include file="$(find refills_first_review)/launch/bringup_donbot.launch">
+    <arg name="enable_pointcloud" value="$(arg enable_pointcloud)" />
+  </include>
   <include file="$(find rs_refills)/launch/rs_refills.launch"/>
   <include file="$(find knowrob_refills)/launch/knowrob_refills.launch"/>
   <!-- node pkg="topic_tools" type="relay" name="relay_refills_camera1" args="/refills_wrist_camera/image_color/compressed /refills_wrist_camera2/image_color/compressed"/-->
