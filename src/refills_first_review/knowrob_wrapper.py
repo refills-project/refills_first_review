@@ -10,6 +10,7 @@ import numpy as np
 from visualization_msgs.msg import Marker
 
 from json_prolog import json_prolog
+from json_prolog.json_prolog import PrologException
 from refills_first_review.tfwrapper import TfWrapper
 
 MAP = 'map'
@@ -189,7 +190,16 @@ class KnowRob(object):
     def prolog_query(self, q):
         with self.query_lock:
             print('sending {}'.format(q))
-            solutions = [x if x != {} else True for x in self.prolog.query(q).solutions()]
+            while True:
+                try:
+                    solutions = [x if x != {} else True for x in self.prolog.query(q).solutions()]
+                    break
+                except PrologException as e:
+                    print('prolog query failed {}'.format(e))
+                    cmd = raw_input('retry? [y/n]')
+                    retry = cmd == 'y'
+                    if not retry:
+                        raise PrologException(e.message)
             # if len(solutions) > 1:
             #     rospy.logwarn('{} returned more than one result'.format(q))
             # elif len(solutions) == 0:
