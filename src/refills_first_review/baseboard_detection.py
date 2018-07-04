@@ -21,6 +21,7 @@ MAP = 'map'
 
 MARKER_OFFSET = 0.025
 
+
 class Shelf(object):
     def __init__(self, number, map_position):
         self.complete = False
@@ -89,12 +90,13 @@ class Shelf(object):
         z = [0, 0, 1]
         y = -np.cross(x, z)
         y = y / np.linalg.norm(y)
-        return quaternion_from_matrix([
+        q = quaternion_from_matrix([
             [x[0], x[1], x[2], 0],
             [y[0], y[1], y[2], 0],
             [z[0], z[1], z[2], 0],
             [0.0, 0.0, 0.0, 1.0],
         ])
+        return q / np.linalg.norm(q)
 
     def get_name(self):
         return 'shelf_system_{}'.format(self.id)
@@ -175,7 +177,7 @@ class BaseboardDetector(object):
                 m.header.frame_id = shelf.get_name()
                 m.ns = self.marker_ns
                 m.id = i
-                m.pose.orientation = Quaternion(*quaternion_about_axis(-np.pi/2, [0,0,1]))
+                m.pose.orientation = Quaternion(*quaternion_about_axis(-np.pi / 2, [0, 0, 1]))
                 if shelf.id == 0:
                     m.pose.position.y -= 0.07
                 m.action = Marker.ADD
