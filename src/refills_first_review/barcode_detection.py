@@ -59,7 +59,7 @@ class BarcodeDetector(object):
         # self.sub.unregister()
         self.listen = False
         try:
-            rospy.wait_for_message('/refills_wrist_camera/image_color', rospy.AnyMsg, timeout=1)
+            rospy.wait_for_message('/refills_wrist_camera/image_color', rospy.AnyMsg, timeout=5)
         except ROSException as e:
             rospy.loginfo('camera offline; \'detecting\' barcodes anyway')
             self.detect_fake_barcodes()

@@ -31,7 +31,7 @@ from refills_first_review.robosherlock_wrapper import RoboSherlock
 # shelf id
 from refills_first_review.tfwrapper import TfWrapper
 
-dist_to_shelf = 0.2
+dist_to_shelf = 0.25
 
 #in shelf_id
 FLOOR_SCANNING_OFFSET = {'x': -0.34,
@@ -50,12 +50,12 @@ FLOOR_DETECTION_OFFSET = {'x': 0.4,
 #                    }
 # in floor_id
 COUNTING_OFFSET = PoseStamped(Header(0, rospy.Time(), ''),
-                              Pose(Point(0.097, -(0.322+dist_to_shelf), 0.154),
+                              Pose(Point(0.097, -(0.322+dist_to_shelf), 0.24),
                                    Quaternion(-0.771, -0.000, -0.000, 0.637)))
 COUNTING_OFFSET2 = -0.54
 
 # in base_footprint
-FLOOR_SCAN_POSE_BOTTOM = {'trans': [-.512, -1.022, -0.008],
+FLOOR_SCAN_POSE_BOTTOM = {'trans': [-.512, -1.022, 0.05],
                           'rot': [0.007, 0.869, -0.495, -0.002]}
 # in base_footprint
 # FLOOR_SCAN_POSE_REST = {'trans': [-.15, -.645, -0.0],
@@ -204,12 +204,12 @@ class CRAM(object):
         self.knowrob.start_looking_at_location(shelf_id)
         self.move_arm.floor_detection_pose()
         if self.robosherlock.robosherlock:
-            rospy.sleep(5)
+            rospy.sleep(3)
         self.knowrob.finish_action()
         self.knowrob.start_looking_at_location(shelf_id)
         self.move_arm.floor_detection_pose2()
         if self.robosherlock.robosherlock:
-            rospy.sleep(5)
+            rospy.sleep(3)
         self.knowrob.finish_action()
         floor_heights = self.robosherlock.stop_floor_detection(shelf_id)
         self.knowrob.add_shelf_floors(shelf_id, floor_heights)

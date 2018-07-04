@@ -48,9 +48,8 @@ class SeparatorClustering(object):
 
     def stop_listening(self):
         self.listen = False
-        # self.separator_sub.unregister()
         try:
-            rospy.wait_for_message('/refills_wrist_camera/image_color', rospy.AnyMsg, timeout=1)
+            rospy.wait_for_message('/refills_wrist_camera/image_color', rospy.AnyMsg, timeout=5)
         except ROSException as e:
             rospy.loginfo('camera offline; \'detecting\' separators anyway')
             self.fake_detection()
