@@ -28,7 +28,7 @@ class SeparatorClustering(object):
         self.separator_maker_color = ColorRGBA(.8, .8, .8, .8)
         self.separator_maker_scale = Vector3(.01, .5, .05)
         self.min_samples = 1
-        self.max_dist = 0.02
+        self.max_dist = 0.025
         self.hanging = False
         self.listen = False
         self.separator_sub = rospy.Subscriber('/separator_marker_detector_node/data_out', SeparatorArray, self.separator_cb,
