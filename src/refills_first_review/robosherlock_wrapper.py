@@ -5,6 +5,7 @@ import numpy as np
 
 import rospy
 from geometry_msgs.msg import PoseStamped
+from iai_ringlight.srv import iai_ringlight_in, iai_ringlight_inRequest
 from iai_robosherlock_msgs.srv import RSQueryService, RSQueryServiceRequest
 from rospy import ROSException
 from rospy_message_converter import message_converter
@@ -34,7 +35,7 @@ class RoboSherlock(object):
         self.separator_detection = SeparatorClustering(knowrob)
         self.baseboard_detection = BaseboardDetector()
         self.barcode_detection = BarcodeDetector(knowrob)
-        self.ring_light_srv = rospy.ServiceProxy('ring_light_switch/setbool', SetBool)
+        self.ring_light_srv = rospy.ServiceProxy('IAI_ringlight_controller', iai_ringlight_in)
         self.floor_detection = True
         try:
             rospy.wait_for_service('/RoboSherlock/json_query', 1)
@@ -49,8 +50,10 @@ class RoboSherlock(object):
 
     def set_ring_light(self, value=True):
         rospy.loginfo('calling ring light switch')
-        req = SetBoolRequest()
-        req.data = value
+        if value:
+            req = iai_ringlight_inRequest(a=9)
+        else:
+            req = iai_ringlight_inRequest(a=0)
         r = None
         try:
             r = self.ring_light_srv.call(req)
@@ -157,10 +160,10 @@ class RoboSherlock(object):
         return count
 
 
-if __name__ == '__main__':
-    rospy.init_node('muh')
-    rs = RoboSherlock()
-    shelf_id = 'shelf_system_0'
-    rs.start_floor_detection(shelf_id)
-    cmd = raw_input('stop? [enter]')
-    print(rs.stop_floor_detection('shelf_system_0'))
+# if __name__ == '__main__':
+#     rospy.init_node('muh')
+#     rs = RoboSherlock()
+#     shelf_id = 'shelf_system_0'
+#     rs.start_floor_detection(shelf_id)
+#     cmd = raw_input('stop? [enter]')
+#     print(rs.stop_floor_detection('shelf_system_0'))
