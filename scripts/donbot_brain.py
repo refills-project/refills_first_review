@@ -21,6 +21,7 @@ from refills_msgs.msg import ScanningFeedback
 from refills_msgs.msg._ScanningAction import ScanningAction
 from refills_msgs.msg._ScanningGoal import ScanningGoal
 from std_msgs.msg import Header
+from tf.transformations import quaternion_conjugate
 
 from refills_first_review.knowrob_wrapper import KnowRob
 from refills_first_review.move_arm import GiskardWrapper
