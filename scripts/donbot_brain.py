@@ -20,6 +20,7 @@ from multiprocessing import TimeoutError
 from refills_msgs.msg import ScanningFeedback
 from refills_msgs.msg._ScanningAction import ScanningAction
 from refills_msgs.msg._ScanningGoal import ScanningGoal
+from saving_images.srv import saveImage, saveImageRequest
 from std_msgs.msg import Header
 from tf.transformations import quaternion_conjugate
 
@@ -76,6 +77,7 @@ class CRAM(object):
         self.mongo_client = MongoClient('localhost')
         self._as = SimpleActionServer(ACTION_NAME, ScanningAction, execute_cb=self.action_cb, auto_start=False)
         self._as.register_preempt_callback(self.preempt_cb)
+        self.save_image_srv = rospy.ServiceProxy('/saving_image', saveImage)
         self.knowrob = KnowRob()
         self.robosherlock = RoboSherlock(self.knowrob)
         self.move_base = MoveBase(enabled=True, knowrob=self.knowrob)
@@ -317,6 +319,8 @@ class CRAM(object):
 
                 facing_type = 'hanging' if self.knowrob.is_hanging_foor(floor_id) else 'standing'
                 count = self.robosherlock.count(product, width, left_sep, self.knowrob.get_perceived_frame_id(shelf_id), facing_type)
+                self.save_image_srv.call(saveImageRequest(NameForPicture=int(product)))
+                rospy.loginfo('image saved')
                 for j in range(count):
                     self.knowrob.add_object(facing_id)
                 rospy.loginfo('counted {} objects in facing {}'.format(count, facing_id))
