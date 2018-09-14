@@ -5,12 +5,12 @@
   <include file="$(find iai_donbot_bringup)/launch/bringup_ur5.launch"/>
   <!--include file="$(find iai_donbot_bringup)/launch/ptgrey_refills_fast2.launch"/-->
   <include file="$(find iai_donbot_bringup)/launch/camera-12mp.launch"/>
-  <include file="$(find realsense_ros_camera)/launch/realsense_donbot.launch">
+  <include file="$(find realsense_ros_camera)/launch/realsense_donbot_slow.launch">
     <arg name="enable_pointcloud" value="$(arg enable_pointcloud)" />
   </include>
-  <include file="$(find refills_first_review)/launch/chillitags_baseboard.launch"/>
+  <include file="$(find refills_first_review)/launch/chillitags_d435.launch"/>
   <include file="$(find refills_first_review)/launch/amy.launch"/>
-  <node pkg="refills_first_review" type="ring_light_switch.py" name="ring_light_switch"/> 
+  <include file="$(find iai_ringlight)/launch/IAI_ringlight_service.launch"/> 
 
   <!-- Bring together the different joint state messages -->
   <node pkg="joint_state_publisher" type="joint_state_publisher"
