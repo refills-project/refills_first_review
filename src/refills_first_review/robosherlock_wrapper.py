@@ -102,7 +102,9 @@ class RoboSherlock(object):
                       "location": self.knowrob.get_perceived_frame_id(shelf_id),
                       "command": "start"}}
             req.query = json.dumps(q)
+            print('robosherlock_service.call(req) START 1')
             self.robosherlock_service.call(req)
+            print('robosherlock_service.call(req) END 1')
 
     def stop_floor_detection(self, shelf_id):
         shelf_frame = self.knowrob.get_perceived_frame_id(shelf_id)
@@ -113,7 +115,9 @@ class RoboSherlock(object):
                       'location': shelf_frame,
                       'command': 'stop'}}
             req.query = json.dumps(q)
+            print('robosherlock_service.call(req) START 2')
             result = self.robosherlock_service.call(req)
+            print('robosherlock_service.call(req) END 2')
             floors = []
             for floor in result.answer:
                 p = message_converter.convert_dictionary_to_ros_message('geometry_msgs/PoseStamped',
@@ -151,7 +155,9 @@ class RoboSherlock(object):
             req = RSQueryServiceRequest()
             req.query = json.dumps(q)
             rospy.sleep(0.4)
+            print('robosherlock_service.call(req) START 3')
             result = self.robosherlock_service.call(req)
+            print('robosherlock_service.call(req) END 3')
             print(result)
             count = len(result.answer)
         else:

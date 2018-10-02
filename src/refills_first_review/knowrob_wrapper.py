@@ -189,7 +189,7 @@ class KnowRob(object):
 
     def prolog_query(self, q):
         with self.query_lock:
-            print('sending {}'.format(q))
+            print('prolog_query(): sending {}'.format(q))
             while True:
                 try:
                     solutions = [x if x != {} else True for x in self.prolog.query(q).solutions()]
@@ -204,7 +204,7 @@ class KnowRob(object):
             #     rospy.logwarn('{} returned more than one result'.format(q))
             # elif len(solutions) == 0:
             #     rospy.logwarn('{} returned nothing'.format(q))
-            print('solutions {}'.format(solutions))
+            print('prolog_query(): solutions {}'.format(solutions))
             print('----------------------')
             return solutions
 

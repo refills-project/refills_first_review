@@ -1,12 +1,14 @@
 <launch>
-  <arg name="enable_pointcloud" default="False" />
+  <include file="$(find iai_donbot_bringup)/launch/bringup_donbot.launch"/>
 
-  <include file="$(find refills_first_review)/launch/bringup_donbot.launch">
-    <arg name="enable_pointcloud" value="$(arg enable_pointcloud)" />
-  </include>
-  <include file="$(find rs_refills)/launch/rs_refills.launch"/>
+<!--  <include file="$(find rs_refills)/launch/rs_refills.launch"/>-->
   <include file="$(find knowrob_refills)/launch/knowrob_refills.launch"/>
-  <!-- node pkg="topic_tools" type="relay" name="relay_refills_camera1" args="/refills_wrist_camera/image_color/compressed /refills_wrist_camera2/image_color/compressed"/-->
-  <!-- node pkg="topic_tools" type="relay" name="relay_refills_camera2" args="/refills_wrist_camera/camera_info /refills_wrist_camera2/camera_info"/-->
+  <include file="$(find refills_counting_image_saver)/launch/refills_counting_pictures.launch"/>
+
+  <include file="$(find refills_first_review)/launch/chillitags_d435.launch"/>
+  <include file="$(find barcode_finder)/launch/barcode_finder.launch"/>
+  <include file="$(find separator_marker_detector)/launch/detector.launch"/>
+
+  <!-- remap qr code detections -->
   <node pkg="topic_tools" type="relay" name="relay_qr_codes" args=" /ros_markers/tf /tf"/>
 </launch>

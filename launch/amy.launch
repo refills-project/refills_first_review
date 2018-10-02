@@ -1,4 +1,0 @@
-<launch>
-  <include file="$(find barcode_finder)/launch/barcode_finder.launch"/>
-  <include file="$(find separator_marker_detector)/launch/detector.launch"/>
-</launch>
