@@ -67,7 +67,7 @@ class ActionGraph(object):
             self.knowrob.prolog_query(q)
         global action_tree # type: list
         if len(action_tree) > 0:
-	    action_tree.pop(-1)
+            action_tree.pop(-1)
         self.make_status_text()
         return self.parent_node
 

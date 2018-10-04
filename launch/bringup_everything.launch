@@ -1,7 +1,7 @@
 <launch>
   <include file="$(find iai_donbot_bringup)/launch/bringup_donbot.launch"/>
 
-<!--  <include file="$(find rs_refills)/launch/rs_refills.launch"/>-->
+  <include file="$(find rs_refills)/launch/rs_refills.launch"/>
   <include file="$(find knowrob_refills)/launch/knowrob_refills.launch"/>
   <include file="$(find refills_counting_image_saver)/launch/refills_counting_pictures.launch"/>
 

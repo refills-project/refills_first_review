@@ -20,7 +20,7 @@ from multiprocessing import TimeoutError
 from refills_msgs.msg import ScanningFeedback
 from refills_msgs.msg._ScanningAction import ScanningAction
 from refills_msgs.msg._ScanningGoal import ScanningGoal
-#from saving_images.srv import saveImage, saveImageRequest
+# from saving_images.srv import saveImage, saveImageRequest
 
 from refills_counting_image_saver.srv import saveImage, saveImageRequest
 
@@ -38,15 +38,20 @@ from refills_first_review.tfwrapper import TfWrapper
 
 dist_to_shelf = 0.25
 
-#in shelf_id
+# in shelf_id
 FLOOR_SCANNING_OFFSET = {'x': -0.34,
-                         'y': -(1.085+dist_to_shelf),
+                         'y': -(1.085 + dist_to_shelf),
                          'z': np.pi}
 
+# shelf floor detection params
 # shelf id
 FLOOR_DETECTION_OFFSET = {'x': 0.4,
-                          'y': -(1.3),
+                          'y': -(1.35),
                           'z': np.pi}
+
+FLOOR_DETECTION_END_POSE = PoseStamped(Header(0, rospy.Time(), 'camera_link'),
+                                       Pose(Point(0,0.8,0),
+                                            Quaternion(0,0,0,1)))
 
 # arm
 # trans in camera_link, rot in base_footprint
@@ -55,7 +60,7 @@ FLOOR_DETECTION_OFFSET = {'x': 0.4,
 #                    }
 # in floor_id
 COUNTING_OFFSET = PoseStamped(Header(0, rospy.Time(), ''),
-                              Pose(Point(0.097, -(0.322+dist_to_shelf), 0.24),
+                              Pose(Point(0.097, -(0.322 + dist_to_shelf), 0.24),
                                    Quaternion(-0.771, -0.000, -0.000, 0.637)))
 COUNTING_OFFSET2 = -0.54
 
@@ -81,9 +86,9 @@ class CRAM(object):
         self._as = SimpleActionServer(ACTION_NAME, ScanningAction, execute_cb=self.action_cb, auto_start=False)
         self._as.register_preempt_callback(self.preempt_cb)
         try:
-	    self.save_image_srv = rospy.ServiceProxy('/saving_image', saveImage)
-	except:
-	    pass
+            self.save_image_srv = rospy.ServiceProxy('/saving_image', saveImage)
+        except:
+            pass
         self.knowrob = KnowRob()
         self.robosherlock = RoboSherlock(self.knowrob)
         self.move_base = MoveBase(enabled=True, knowrob=self.knowrob)
@@ -108,7 +113,7 @@ class CRAM(object):
                 self.mongo_wipe()
             except OSError as exc:  # Python >2.5
                 rospy.logwarn('failed to wipe mongo, IO error')
-            
+
             self.move_arm.drive_pose()
             # TODO scan shelf system
             # self.knowrob.start_shelf_system_mapping(self.sys)
@@ -117,23 +122,23 @@ class CRAM(object):
                 self.scan_shelf(shelf_id)
                 # TODO feedback
             self.knowrob.finish_action()
-            
+
             try:
                 rospy.loginfo('DONE')
                 rospy.loginfo('exporting logs')
                 data_path = '{}/data/'.format(RosPack().get_path('refills_first_review'))
                 episode_name = str(datetime.date.today()) + '_' + str(time())
-                episode_dir = data_path+episode_name
+                episode_dir = data_path + episode_name
                 os.makedirs(episode_dir)
-                self.knowrob.save_beliefstate(episode_dir+'/beliefstate.owl')
-                self.knowrob.save_action_graph(episode_dir+'/actions.owl')
+                self.knowrob.save_beliefstate(episode_dir + '/beliefstate.owl')
+                self.knowrob.save_action_graph(episode_dir + '/actions.owl')
                 rospy.loginfo('logs exported')
                 self.mongo_save(episode_dir)
             except OSError as exc:  # Python >2.5
                 rospy.logwarn('failed to export logs, IO error')
-            #self.knowrob.save_beliefstate()
-            #self.knowrob.save_action_graph()
-            
+            # self.knowrob.save_beliefstate()
+            # self.knowrob.save_action_graph()
+
             self._as.set_succeeded()
         except Exception as e:
             traceback.print_exc()
@@ -164,7 +169,7 @@ class CRAM(object):
             self.robosherlock.start_baseboard_detection()
             cmd = 'n'
             while cmd != 'y' and cmd != '1337':
-                cmd = raw_input('finished scanning shelf system? [y/n]') 
+                cmd = raw_input('finished scanning shelf system? [y/n]')
             if cmd == '1337':
                 rospy.logwarn('skipping baseboard detection')
                 self.robosherlock.baseboard_detection.detect_fake_shelves('0123')
@@ -209,17 +214,22 @@ class CRAM(object):
 
     def detect_shelf_floors(self, shelf_id):
         self.knowrob.start_finding_shelf_layer()
+        self.move_arm.floor_detection_pose()
         self.robosherlock.start_floor_detection(shelf_id)
         self.knowrob.start_looking_at_location(shelf_id)
-        self.move_arm.floor_detection_pose()
         if self.robosherlock.robosherlock:
-            rospy.sleep(3)
+            rospy.sleep(5)
         self.knowrob.finish_action()
-        self.knowrob.start_looking_at_location(shelf_id)
-        self.move_arm.floor_detection_pose2()
-        if self.robosherlock.robosherlock:
-            rospy.sleep(3)
-        self.knowrob.finish_action()
+        next_goal = PoseStamped()
+        next_goal.header.frame_id = 'camera_link'
+        next_goal.pose.orientation.w = 1
+        next_goal.pose.position.y = 0.2
+        for i in range(4):
+            self.knowrob.start_looking_at_location(shelf_id)
+            self.move_arm.set_and_send_cartesian_goal(next_goal)
+            if self.robosherlock.robosherlock:
+                rospy.sleep(2)
+            self.knowrob.finish_action()
         floor_heights = self.robosherlock.stop_floor_detection(shelf_id)
         self.knowrob.add_shelf_floors(shelf_id, floor_heights)
         floor_ids = self.knowrob.get_floor_ids(shelf_id)
@@ -257,7 +267,6 @@ class CRAM(object):
             self.move_base.move_relative([-self.knowrob.get_floor_width(), 0, 0], retry=False)
         except TimeoutError as e:
             self.move_base.STOP()
-
 
         barcodes = self.robosherlock.stop_barcode_detection()
         if not self.knowrob.is_hanging_foor(floor_id):
@@ -324,17 +333,17 @@ class CRAM(object):
                     self.move_base.STOP()
 
                 facing_type = 'hanging' if self.knowrob.is_hanging_foor(floor_id) else 'standing'
-                count = self.robosherlock.count(product, width, left_sep, self.knowrob.get_perceived_frame_id(shelf_id), facing_type)
-		try:
+                count = self.robosherlock.count(product, width, left_sep, self.knowrob.get_perceived_frame_id(shelf_id),
+                                                facing_type)
+                try:
                     self.save_image_srv.call(saveImageRequest(NameForPicture=int(product.split('AN')[1])))
                     rospy.loginfo('image saved')
-		except:
-		    pass
+                except:
+                    pass
                 for j in range(count):
                     self.knowrob.add_object(facing_id)
                 rospy.loginfo('counted {} objects in facing {}'.format(count, facing_id))
                 self.knowrob.finish_action()
-
 
     def STOP(self):
         self.move_base.STOP()

@@ -38,8 +38,8 @@ class RoboSherlock(object):
         self.ring_light_srv = rospy.ServiceProxy('IAI_ringlight_controller', iai_ringlight_in)
         self.floor_detection = True
         try:
-            rospy.wait_for_service('/RoboSherlock/json_query', 1)
-            self.robosherlock_service = rospy.ServiceProxy('/RoboSherlock/json_query',
+            rospy.wait_for_service('/RoboSherlock/query', 1)
+            self.robosherlock_service = rospy.ServiceProxy('/RoboSherlock/query',
                                                            RSQueryService)
             self.robosherlock = True
         except ROSException as e:
@@ -94,7 +94,7 @@ class RoboSherlock(object):
         return FLOORS[shelf_id]
 
     def start_floor_detection(self, shelf_id):
-        self.set_ring_light(False)
+        self.set_ring_light(True)
         if self.robosherlock and self.floor_detection:
             req = RSQueryServiceRequest()
             q = {"scan":
@@ -132,8 +132,8 @@ class RoboSherlock(object):
             print('detected shelfs at heights: {}'.format(floors))
 
             # TODO remove this if floor detection works
-            shelf_pose = self.tf.lookup_transform(MAP, shelf_frame)
-            floors = FLOORS[int(shelf_pose.pose.position.x)]
+            # shelf_pose = self.tf.lookup_transform(MAP, shelf_frame)
+            # floors = FLOORS[int(shelf_pose.pose.position.x)]
         else:
             shelf_pose = self.tf.lookup_transform(MAP, shelf_frame)
             floors = FLOORS[int(shelf_pose.pose.position.x)]

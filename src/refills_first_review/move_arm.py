@@ -126,25 +126,12 @@ class GiskardWrapper(object):
         joint_state = JointState()
         joint_state.name = self.joint_names
         joint_state.position = [
-            -1.75002080599,
-            -2.07400399843,
-            1.79460525513,
-            -2.49168950716,
-            -1.40355569521,
-            1.50637328625,
-        ]
-        self.send_joint_goal(joint_state)
-
-    def floor_detection_pose2(self):
-        joint_state = JointState()
-        joint_state.name = self.joint_names
-        joint_state.position = [
-            -1.61822063128,
-            -1.36299354235,
-            2.39222145081,
-            -3.91022426287,
-            -1.52502566973,
-            1.5591506958,
+            -1.63407260576,
+            -1.4751423041,
+            0.677300930023,
+            -2.12363607088,
+            -1.50967580477,
+            1.55717146397,
         ]
         self.send_joint_goal(joint_state)
 
