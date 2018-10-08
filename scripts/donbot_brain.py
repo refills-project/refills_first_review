@@ -46,7 +46,7 @@ FLOOR_SCANNING_OFFSET = {'x': -0.34,
 # shelf floor detection params
 # shelf id
 FLOOR_DETECTION_OFFSET = {'x': 0.4,
-                          'y': -(1.35),
+                          'y': -(1.28),
                           'z': np.pi}
 
 FLOOR_DETECTION_END_POSE = PoseStamped(Header(0, rospy.Time(), 'camera_link'),
@@ -214,21 +214,21 @@ class CRAM(object):
 
     def detect_shelf_floors(self, shelf_id):
         self.knowrob.start_finding_shelf_layer()
-        self.move_arm.floor_detection_pose()
         self.robosherlock.start_floor_detection(shelf_id)
+        self.move_arm.floor_detection_pose()
         self.knowrob.start_looking_at_location(shelf_id)
         if self.robosherlock.robosherlock:
-            rospy.sleep(5)
+            rospy.sleep(4)
         self.knowrob.finish_action()
         next_goal = PoseStamped()
         next_goal.header.frame_id = 'camera_link'
         next_goal.pose.orientation.w = 1
         next_goal.pose.position.y = 0.2
-        for i in range(4):
+        for i in range(5):
             self.knowrob.start_looking_at_location(shelf_id)
             self.move_arm.set_and_send_cartesian_goal(next_goal)
             if self.robosherlock.robosherlock:
-                rospy.sleep(2)
+                rospy.sleep(1)
             self.knowrob.finish_action()
         floor_heights = self.robosherlock.stop_floor_detection(shelf_id)
         self.knowrob.add_shelf_floors(shelf_id, floor_heights)

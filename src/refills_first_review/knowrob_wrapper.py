@@ -309,7 +309,7 @@ class KnowRob(object):
         for solution in solutions:
             floor_id = solution['Floor'].replace('\'', '')
             floor_pose = self.tf.lookup_transform(shelf_frame_id, solution['Frame'].replace('\'', ''))
-            if floor_pose.pose.position.z < 1.2:
+            if floor_pose.pose.position.z < 1.3:
                 floors.append((floor_id, floor_pose))
         floors = list(sorted(floors, key=lambda x: x[1].pose.position.z))
         self.floors = OrderedDict(floors)

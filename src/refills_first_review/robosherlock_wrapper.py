@@ -37,6 +37,7 @@ class RoboSherlock(object):
         self.barcode_detection = BarcodeDetector(knowrob)
         self.ring_light_srv = rospy.ServiceProxy('IAI_ringlight_controller', iai_ringlight_in)
         self.floor_detection = True
+        self.counting = True
         try:
             rospy.wait_for_service('/RoboSherlock/query', 1)
             self.robosherlock_service = rospy.ServiceProxy('/RoboSherlock/query',
@@ -141,7 +142,7 @@ class RoboSherlock(object):
 
     def count(self, product, width, left_separator, perceived_shelf_frame_id, facing_type='standing'):
         self.set_ring_light(False)
-        if self.robosherlock:
+        if self.robosherlock and self.counting:
             ls = self.tf.lookup_transform(perceived_shelf_frame_id,
                                           self.knowrob.get_perceived_frame_id(left_separator))
             q = {'detect':{

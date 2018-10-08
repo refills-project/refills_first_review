@@ -4,6 +4,7 @@ from geometry_msgs.msg import Quaternion, Point, PoseStamped, QuaternionStamped,
 from giskard_msgs.msg import Controller, ControllerListGoal, ControllerListAction
 from sensor_msgs.msg import JointState
 from std_msgs.msg import Header
+from tf.transformations import quaternion_about_axis
 
 
 class GiskardWrapper(object):
@@ -42,25 +43,31 @@ class GiskardWrapper(object):
         self.set_translation_goal(PointStamped(Header(0, rospy.Time(), self.tip),
                                                Point(0, 0, 0)))
 
-    def set_translation_goal(self, translation, weight=1.0):
+    def set_translation_goal(self, translation, weight=1.0, threshold_value=0.2):
         goal_pose = PoseStamped()
         if isinstance(translation, PointStamped):
             goal_pose.header = translation.header
             goal_pose.pose.position = translation.point
         else:
             goal_pose = translation
-        self.translation_goal = self.make_controller(Controller.TRANSLATION_3D, goal_pose, weight)
+        self.translation_goal = self.make_controller(Controller.TRANSLATION_3D, goal_pose, weight, threshold_value)
 
-    def set_orientation_goal(self, orientation, weight=1.0):
+    def set_orientation_goal(self, orientation, weight=1.0, threshold_value=0.2):
         goal_pose = PoseStamped()
         if isinstance(orientation, QuaternionStamped):
             goal_pose.header = orientation.header
             goal_pose.pose.orientation = orientation.quaternion
         else:
             goal_pose = orientation
-        self.orientation_goal = self.make_controller(Controller.ROTATION_3D, goal_pose, weight)
+        self.orientation_goal = self.make_controller(Controller.ROTATION_3D, goal_pose, weight, threshold_value)
 
-    def make_controller(self, type, goal, weight):
+    def rotate_x(self, angle):
+        goal_pose = PoseStamped()
+        goal_pose.header.frame_id = self.tip
+        goal_pose.pose.orientation = Quaternion(*quaternion_about_axis(angle, [1,0,0]))
+        self.set_and_send_cartesian_goal(goal_pose)
+
+    def make_controller(self, type, goal, weight, threshold_value=0.2):
         controller = Controller()
         controller.type = type
         controller.tip_link = self.tip
@@ -70,13 +77,13 @@ class GiskardWrapper(object):
 
         controller.p_gain = 3
         controller.enable_error_threshold = True
-        controller.threshold_value = 0.2
+        controller.threshold_value = threshold_value
         controller.weight = weight
         return controller
 
-    def set_and_send_cartesian_goal(self, goal_pose):
-        self.set_translation_goal(goal_pose)
-        self.set_orientation_goal(goal_pose)
+    def set_and_send_cartesian_goal(self, goal_pose, threshold_value=0.2):
+        self.set_translation_goal(goal_pose, threshold_value=threshold_value)
+        self.set_orientation_goal(goal_pose, threshold_value=threshold_value)
         self.send_cartesian_goal()
 
     def send_cartesian_goal(self):
