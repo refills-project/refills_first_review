@@ -22,8 +22,6 @@ from refills_msgs.msg._ScanningAction import ScanningAction
 from refills_msgs.msg._ScanningGoal import ScanningGoal
 # from saving_images.srv import saveImage, saveImageRequest
 
-from refills_counting_image_saver.srv import saveImage, saveImageRequest
-
 from std_msgs.msg import Header
 from tf.transformations import quaternion_conjugate
 
@@ -86,6 +84,7 @@ class CRAM(object):
         self._as = SimpleActionServer(ACTION_NAME, ScanningAction, execute_cb=self.action_cb, auto_start=False)
         self._as.register_preempt_callback(self.preempt_cb)
         try:
+            from refills_counting_image_saver.srv import saveImage, saveImageRequest
             self.save_image_srv = rospy.ServiceProxy('/saving_image', saveImage)
         except:
             pass

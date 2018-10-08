@@ -69,7 +69,7 @@ class BarcodeDetector(object):
         return self.barcodes
 
     def detect_fake_barcodes(self):
-        num_of_barcodes = 14
+        num_of_barcodes = 4
         frame_id = self.knowrob.get_perceived_frame_id(self.floor_id)
         barcodes = sample(self.barcode_to_mesh.keys(), num_of_barcodes)
         for i in range(num_of_barcodes):
