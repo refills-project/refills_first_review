@@ -158,15 +158,22 @@ class CRAM(object):
         rospy.loginfo('shelf baseboard detection requires manuel mode')
         rospy.loginfo('move to free space plx, THE ARM WILL MOVE!!!')
         cmd = raw_input('done? [y/n]')
-        while raw_input('add new shelf system? [y/n]') == 'y':
+        while True:
+            input = raw_input('add new shelf system? [y/n]')
+            if input != 'y' and input != '1337':
+                break
             shelf_system_id = self.knowrob.add_shelf_system()
             rospy.loginfo('added shelf system {}'.format(shelf_system_id))
             rospy.loginfo('moving arm to baseboard scanning pose')
-            self.move_arm.pre_baseboard_pose()
-            self.move_arm.set_and_send_cartesian_goal(SHELF_BASEBOARD)
-            rospy.loginfo('scan QR codes plx')
+            if input != '1337':
+                self.move_arm.pre_baseboard_pose()
+                self.move_arm.set_and_send_cartesian_goal(SHELF_BASEBOARD)
+                rospy.loginfo('scan QR codes plx')
             self.robosherlock.start_baseboard_detection()
-            cmd = 'n'
+            if input == '1337':
+                cmd = input
+            else:
+                cmd = 'n'
             while cmd != 'y' and cmd != '1337':
                 cmd = raw_input('finished scanning shelf system? [y/n]')
             if cmd == '1337':

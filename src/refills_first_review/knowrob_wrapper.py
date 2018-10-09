@@ -247,8 +247,8 @@ class KnowRob(object):
                 'rdfs_individual_of(A, {})'.format(SHELF_METER, shelf_system_id, PERCEPTION_AFFORDANCE)
             solutions = self.prolog_query(q)[0]
             pose.pose.position.x -= solutions['T'][0]
-            pose.pose.position.y -= solutions['T'][1]
-            pose.pose.position.z -= solutions['T'][2]
+            pose.pose.position.y -= solutions['T'][1] + 0.04
+            pose.pose.position.z -= solutions['T'][2] - 0.03
             object_id = solutions['ID'].replace('\'', '')
             q = 'belief_at_update(\'{}\', {})'.format(object_id, self.pose_to_prolog(pose))
             solutions = self.prolog_query(q)
@@ -326,7 +326,7 @@ class KnowRob(object):
         return self.get_floor_position(floor_id).pose.position.z > 1.2
 
     def is_bottom_floor(self, floor_id):
-        return self.get_floor_position(floor_id).pose.position.z < 0.16
+        return self.get_floor_position(floor_id).pose.position.z < 0.18
 
     def is_hanging_foor(self, floor_id):
         q = 'rdfs_individual_of(\'{}\', {})'.format(floor_id, SHELF_FLOOR_MOUNTING)
@@ -353,7 +353,7 @@ class KnowRob(object):
         new_floor_height = np.mean([self.tf.transform_pose(
             self.get_perceived_frame_id(floor_id), p).pose.position.z for p in separators])
         current_floor_pose = self.tf.lookup_transform(MAP, self.get_object_frame_id(floor_id))
-        current_floor_pose.pose.position.z += new_floor_height - 0.01
+        current_floor_pose.pose.position.z += new_floor_height - 0.015
         q = 'belief_at_update(\'{}\', {})'.format(floor_id, self.pose_to_prolog(current_floor_pose))
         self.prolog_query(q)
 
