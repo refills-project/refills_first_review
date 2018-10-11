@@ -291,14 +291,14 @@ class CRAM(object):
             pose = FLOOR_SCAN_POSE_BOTTOM
         else:
             pose = FLOOR_SCAN_POSE_REST
-        self.move_arm.set_orientation_goal(QuaternionStamped(Header(0, rospy.Time(), self.move_arm.root),
-                                                             Quaternion(*pose['rot'])))
-        self.move_arm.set_translation_goal(
-            PointStamped(Header(0, rospy.Time(), self.move_arm.root),
-                         Point(pose['trans'][0],
-                               pose['trans'][1] - floor_position.pose.position.y,
-                               pose['trans'][2] + floor_position.pose.position.z)))
-        self.move_arm.send_cartesian_goal()
+
+        goal_pose = PoseStamped()
+        goal_pose.header.frame_id = self.move_arm.root
+        goal_pose.pose.orientation = Quaternion(*pose['rot'])
+        goal_pose.pose.position = Point(*pose['trans'])
+        goal_pose.pose.position.y -= floor_position.pose.position.y
+        goal_pose.pose.position.z += floor_position.pose.position.z
+        self.move_arm.set_and_send_cartesian_goal(goal_pose)
 
     def move_in_front_of_shelf(self, shelf_id):
         return self.move_base.move_absolute_xyz(self.knowrob.get_perceived_frame_id(shelf_id),
@@ -353,8 +353,8 @@ class CRAM(object):
 
     def STOP(self):
         self.move_base.STOP()
-        self.move_arm.client.cancel_goal()
-        self.move_arm.client.cancel_all_goals()
+        # self.move_arm.client.cancel_goal()
+        # self.move_arm.client.cancel_all_goals()
 
 
 if __name__ == '__main__':
