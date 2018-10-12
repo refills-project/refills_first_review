@@ -164,8 +164,8 @@ class RoboSherlock(object):
         else:
             count = int(np.random.random() * 4)
         # self.set_ring_light(True)
-        # return count
-        return 1
+        return count
+        # return 1
 
 
 # if __name__ == '__main__':
