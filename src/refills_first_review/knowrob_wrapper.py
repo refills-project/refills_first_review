@@ -326,7 +326,7 @@ class KnowRob(object):
         return self.get_floor_position(floor_id).pose.position.z > 1.2
 
     def is_bottom_floor(self, floor_id):
-        return self.get_floor_position(floor_id).pose.position.z < 0.2
+        return self.get_floor_position(floor_id).pose.position.z < 0.18
 
     def is_hanging_foor(self, floor_id):
         q = 'rdfs_individual_of(\'{}\', {})'.format(floor_id, SHELF_FLOOR_MOUNTING)
