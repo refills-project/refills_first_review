@@ -224,7 +224,7 @@ class CRAM(object):
         self.move_arm.floor_detection_pose()
         self.knowrob.start_looking_at_location(shelf_id)
         if self.robosherlock.robosherlock:
-            rospy.sleep(4)
+            rospy.sleep(0)
         self.knowrob.finish_action()
         next_goal = PoseStamped()
         next_goal.header.frame_id = 'camera_link'
@@ -234,7 +234,7 @@ class CRAM(object):
             self.knowrob.start_looking_at_location(shelf_id)
             self.move_arm.set_and_send_cartesian_goal(next_goal)
             if self.robosherlock.robosherlock:
-                rospy.sleep(1)
+                rospy.sleep(0)
             self.knowrob.finish_action()
         floor_heights = self.robosherlock.stop_floor_detection(shelf_id)
         self.knowrob.add_shelf_floors(shelf_id, floor_heights)
@@ -291,14 +291,15 @@ class CRAM(object):
             pose = FLOOR_SCAN_POSE_BOTTOM
         else:
             pose = FLOOR_SCAN_POSE_REST
-        self.move_arm.set_orientation_goal(QuaternionStamped(Header(0, rospy.Time(), self.move_arm.root),
-                                                             Quaternion(*pose['rot'])))
-        self.move_arm.set_translation_goal(
-            PointStamped(Header(0, rospy.Time(), self.move_arm.root),
-                         Point(pose['trans'][0],
-                               pose['trans'][1] - floor_position.pose.position.y,
-                               pose['trans'][2] + floor_position.pose.position.z)))
-        self.move_arm.send_cartesian_goal()
+
+        goal_pose = PoseStamped()
+        goal_pose.header.frame_id = self.move_arm.root
+        goal_pose.pose.orientation = Quaternion(*pose['rot'])
+        goal_pose.pose.position = Point(*pose['trans'])
+        goal_pose.pose.position.y -= floor_position.pose.position.y
+        goal_pose.pose.position.z += floor_position.pose.position.z
+        self.move_arm.set_and_send_cartesian_goal(goal_pose)
+        # self.move_arm.send_cartesian_goal()
 
     def move_in_front_of_shelf(self, shelf_id):
         return self.move_base.move_absolute_xyz(self.knowrob.get_perceived_frame_id(shelf_id),
@@ -353,8 +354,8 @@ class CRAM(object):
 
     def STOP(self):
         self.move_base.STOP()
-        self.move_arm.client.cancel_goal()
-        self.move_arm.client.cancel_all_goals()
+        # self.move_arm.client.cancel_goal()
+        # self.move_arm.client.cancel_all_goals()
 
 
 if __name__ == '__main__':
