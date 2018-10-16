@@ -141,7 +141,7 @@ class RoboSherlock(object):
         return floors
 
     def count(self, product, width, left_separator, perceived_shelf_frame_id, facing_type='standing'):
-        self.set_ring_light(False)
+        self.set_ring_light(True)
         if self.robosherlock and self.counting:
             ls = self.tf.lookup_transform(perceived_shelf_frame_id,
                                           self.knowrob.get_perceived_frame_id(left_separator))
