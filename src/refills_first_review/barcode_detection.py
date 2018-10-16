@@ -46,7 +46,8 @@ class BarcodeDetector(object):
         self.sub = rospy.Subscriber(self.detector_topic, Barcode, self.cb, queue_size=100)
 
     def load_barcode_to_mesh_map(self):
-        self.barcode_to_mesh = json.load(open(RosPack().get_path('refills_first_review')+'/data/barcode_to_mesh.json'))
+        self.barcode_to_mesh = json.load(
+            open(RosPack().get_path('refills_first_review') + '/data/barcode_to_mesh.json'))
 
     def start_listening(self, shelf_id, floor_id):
         self.shelf_id = shelf_id
@@ -98,7 +99,8 @@ class BarcodeDetector(object):
             if p is not None:
                 p.header.stamp = rospy.Time()
                 p = self.tf.transform_pose(self.knowrob.get_perceived_frame_id(self.floor_id), p)
-                if p.pose.position.x > 0.0 and p.pose.position.x < 1.0:
+                if p.pose.position.x > 0.0 and p.pose.position.x < 1.0 and \
+                        p.pose.position.z < 0.05 and p.pose.position.z > -0.05:
                     self.barcodes[data.barcode[1:-1]].append(p)
 
     def publish_as_marker(self):
