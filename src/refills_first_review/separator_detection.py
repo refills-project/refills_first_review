@@ -31,7 +31,8 @@ class SeparatorClustering(object):
         self.max_dist = 0.025
         self.hanging = False
         self.listen = False
-        self.separator_sub = rospy.Subscriber('/separator_marker_detector_node/data_out', SeparatorArray, self.separator_cb,
+        self.separator_sub = rospy.Subscriber('/separator_marker_detector_node/data_out', SeparatorArray,
+                                              self.separator_cb,
                                               queue_size=10)
 
     def start_listening_separators(self, floor_id, topic='/separator_marker_detector_node/data_out'):
@@ -61,10 +62,22 @@ class SeparatorClustering(object):
             frame_id = self.knowrob.get_perceived_frame_id(self.current_floor_id)
             for separator in separator_array.separators:
                 p = self.tf.transform_pose(frame_id, separator.separator_pose)
-                if p is not None and 0.04 <= p.pose.position.x and p.pose.position.x <= 0.96:
+                if p is not None and self.separator_on_floor(p):
                     self.detections.append([p.pose.position.x, p.pose.position.y, p.pose.position.z])
 
-    def cluster(self):
+    def separator_on_floor(self, separator_pose, width_threshold=0.04, height_threshold=0.05):
+        """
+        :param separator_pose: pose of separator in floor frame
+        :type separator_pose: PoseStamped
+        :return: bool
+        """
+        floor_width = self.knowrob.get_floor_width()
+        x = separator_pose.pose.position.x
+        z = separator_pose.pose.position.z
+        return width_threshold <= x and x <= floor_width - width_threshold and \
+               -height_threshold <= z and z <= height_threshold
+
+    def cluster(self, visualize=True):
         if not self.hanging:
             self.hacky()
         data = np.array(self.detections)
@@ -85,6 +98,8 @@ class SeparatorClustering(object):
                     if 0.0 <= separator.pose.position.x and separator.pose.position.x <= 1:
                         separators.append(separator)
 
+            if visualize:
+                self.visualize_detections(clusters.labels_, self.pose_list_to_np(separators))
         return separators
 
     def cluster_to_separator(self, separator_cluster):
@@ -93,40 +108,96 @@ class SeparatorClustering(object):
     def fake_detection(self):
         if not self.hanging:
             num_fake_separators = 5
-            frame_id = self.knowrob.get_perceived_frame_id(self.current_floor_id)
             for i in range(num_fake_separators):
                 for j in range(self.min_samples + 1):
-                    p = PoseStamped()
-                    p.header.frame_id = frame_id
                     if self.hanging:
-                        p.pose.position.x = (i+0.5) / (num_fake_separators-1)
+                        x = (i + 0.5) / (num_fake_separators - 1)
                     else:
-                        p.pose.position.x = i / (num_fake_separators - 1)
-                    p.pose.position.y = 0
-                    p.pose.orientation = Quaternion(0, 0, 0, 1)
-                    if (self.hanging and i < num_fake_separators - 1) or not self.hanging:
-                        self.detections.append([p.pose.position.x, p.pose.position.y, p.pose.position.z])
+                        x = i / (num_fake_separators - 1)
+                    muh = [x,0,0]
+                    sigma = 0.00001
+                    cov = [[sigma,0,0],
+                           [0,sigma,0],
+                           [0,0,sigma]]
+                    points = np.random.multivariate_normal(muh, cov, 10)
+                    for k in range(points.shape[0]):
+                        p = points[k]
+                        if (self.hanging and i < num_fake_separators - 1) or not self.hanging:
+                            self.detections.append(p)
 
     def hacky(self):
         for i in range(200):
-            self.detections.append([0,0,0])
-            self.detections.append([1,0,0])
+            self.detections.append([0, 0, 0])
+            self.detections.append([1, 0, 0])
         for i in range(20):
-            self.detections.append([0.01,0,0])
-            self.detections.append([0.99,0,0])
+            self.detections.append([0.01, 0, 0])
+            self.detections.append([0.99, 0, 0])
             # self.detections.append([0.02,0,0])
             # self.detections.append([0.98,0,0])
             # self.detections.append([0.03,0,0])
             # self.detections.append([0.97,0,0])
 
+    def pose_list_to_np(self, poses):
+        """
+        :type poses: list
+        :return:
+        """
+        l = []
+        for p in poses: # type: PoseStamped
+            l.append([p.pose.position.x,
+                      p.pose.position.y,
+                      p.pose.position.z])
+        return np.array(l)
+
+    def visualize_detections(self, labels, centers):
+        import pylab as plt
+        from mpl_toolkits.mplot3d import Axes3D
+
+        ulabels = np.unique(labels)
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+
+        detections = np.array(self.detections)
+        for i, label in enumerate(ulabels):
+            if i % 2 == 0:
+                color = 'g'
+            else:
+                color = 'y'
+            if label == -1:
+                color = 'r'
+            ax.scatter(detections[labels==label,0], detections[labels==label,1], detections[labels==label,2], c=color,
+                       linewidth=0.0)
+
+        ax.scatter(centers[:,0], centers[:,1], centers[:,2], c='k',
+                   marker='x',s=80)
+
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
+        ax.set_zlabel('z')
+        ax.set_xlim(0,1)
+        ax.set_ylim(-.5,.5)
+        ax.set_zlim(-.5,.5)
+        plt.show()
+
 
 if __name__ == '__main__':
     rospy.init_node('separator_detection_test')
-    s = SeparatorClustering(KnowRob())
-    s.start_listening_separators('http://knowrob.org/kb/dm-market.owl#DMShelfLayer4TilesFront_UNVRGYSE')
-    print('separator detection test started')
-    cmd = raw_input('stop? [enter]')
-    print('separator detection test ended')
-    separators = s.stop_listening()
-    print(separators)
-    rospy.sleep(.5)
+    kr = KnowRob()
+    s = SeparatorClustering(kr)
+    shelfs = kr.get_shelves()
+    for shelf_id in shelfs:
+        try:
+            floor = kr.get_floor_ids(shelf_id).keys()[0]
+            break
+        except:
+            pass
+    else:
+        print('no shelf has floors')
+    s.start_listening_separators(floor)
+    s.stop_listening()
+    # print('separator detection test started')
+    # cmd = raw_input('stop? [enter]')
+    # print('separator detection test ended')
+    # separators = s.stop_listening()
+    # print(separators)
+    # rospy.sleep(.5)
