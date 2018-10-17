@@ -27,8 +27,8 @@ class SeparatorClustering(object):
         self.map_frame_id = 'map'
         self.separator_maker_color = ColorRGBA(.8, .8, .8, .8)
         self.separator_maker_scale = Vector3(.01, .5, .05)
-        self.min_samples = 1
-        self.max_dist = 0.025
+        self.min_samples = 2
+        self.max_dist = 0.015
         self.hanging = False
         self.listen = False
         self.separator_sub = rospy.Subscriber('/separator_marker_detector_node/data_out', SeparatorArray,
@@ -77,7 +77,7 @@ class SeparatorClustering(object):
         return width_threshold <= x and x <= floor_width - width_threshold and \
                -height_threshold <= z and z <= height_threshold
 
-    def cluster(self, visualize=True):
+    def cluster(self, visualize=False):
         if not self.hanging:
             self.hacky()
         data = np.array(self.detections)

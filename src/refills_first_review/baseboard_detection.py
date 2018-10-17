@@ -132,22 +132,44 @@ class BaseboardDetector(object):
         return OrderedDict([x.get_shelf() for x in self.shelves if x.is_complete()])
 
     def detect_fake_shelves(self, ids):
+        y = -0.615
+        x = 0.66-MARKER_OFFSET
         if '0' in ids:
-            s1 = Shelf(20, [0.695, -0.59, 0])
-            s1.add_measurement(21, [1.59, -0.59, 0])
+            s1 = Shelf(20, [x, y, 0])
+            s1.add_measurement(21, [1+x, y, 0])
             self.shelves.append(s1)
         if '1' in ids:
-            s2 = Shelf(22, [1.695, -0.59, 0])
-            s2.add_measurement(23, [2.585, -0.59, 0])
+            s2 = Shelf(22, [1+x, y, 0])
+            s2.add_measurement(23, [2+x, y, 0])
             self.shelves.append(s2)
         if '2' in ids:
-            s3 = Shelf(24, [2.695, -0.59, 0])
-            s3.add_measurement(25, [3.585, -0.59, 0])
+            s3 = Shelf(24, [2+x, y, 0])
+            s3.add_measurement(25, [3+x, y, 0])
             self.shelves.append(s3)
         if '3' in ids:
-            s4 = Shelf(26, [3.695, -0.59, 0])
-            s4.add_measurement(27, [4.585, -0.59, 0])
+            s4 = Shelf(26, [3+x, y, 0])
+            s4.add_measurement(27, [4+x, y, 0])
             self.shelves.append(s4)
+        y = -0.615
+        x = 0.66-MARKER_OFFSET
+        # l = -0.02-MARKER_OFFSET
+        # r = +0.07-MARKER_OFFSET
+        # if '0' in ids:
+        #     s1 = Shelf(20, [0.68+l, -0.6, 0])
+        #     s1.add_measurement(21, [1.59+r, -0.58, 0])
+        #     self.shelves.append(s1)
+        # if '1' in ids:
+        #     s2 = Shelf(22, [1.69+l, -0.59, 0])
+        #     s2.add_measurement(23, [2.6+r, -0.588, 0])
+        #     self.shelves.append(s2)
+        # if '2' in ids:
+        #     s3 = Shelf(24, [2.69+l, -0.59, 0])
+        #     s3.add_measurement(25, [3.588+r, -0.587, 0])
+        #     self.shelves.append(s3)
+        # if '3' in ids:
+        #     s4 = Shelf(26, [3+x, y, 0])
+        #     s4.add_measurement(27, [4+x, y, 0])
+        #     self.shelves.append(s4)
 
     def cb(self, data):
         for msg in data.transforms:

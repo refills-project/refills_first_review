@@ -76,7 +76,7 @@ SHELF_BASEBOARD = PoseStamped(Header(0, rospy.Time(), 'base_link'),
 
 ACTION_NAME = 'scanning_action'
 
-
+#rs_camera_color_optical_frame
 class CRAM(object):
     def __init__(self):
         # TODO use paramserver [low]

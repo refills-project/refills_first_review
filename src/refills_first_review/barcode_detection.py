@@ -18,6 +18,8 @@ from tf.transformations import quaternion_from_matrix, quaternion_from_euler
 from tf2_msgs.msg import TFMessage
 from visualization_msgs.msg import Marker, MarkerArray
 from rospkg import RosPack
+
+from refills_first_review.knowrob_wrapper import KnowRob
 from refills_first_review.tfwrapper import TfWrapper
 
 MAP = 'map'
@@ -100,7 +102,7 @@ class BarcodeDetector(object):
                 p.header.stamp = rospy.Time()
                 p = self.tf.transform_pose(self.knowrob.get_perceived_frame_id(self.floor_id), p)
                 if p.pose.position.x > 0.0 and p.pose.position.x < 1.0 and \
-                        p.pose.position.z < 0.05 and p.pose.position.z > -0.05:
+                        p.pose.position.z < 0.02 and p.pose.position.z > -0.08:
                     self.barcodes[data.barcode[1:-1]].append(p)
 
     def publish_as_marker(self):
@@ -153,10 +155,18 @@ class BarcodeDetector(object):
 
 if __name__ == '__main__':
     rospy.init_node('baseboard_detection_test')
-    d = BarcodeDetector(True)
-    d.start_listening('shelf_system_1', 2)
-    print('barcode detection test started')
-    cmd = raw_input('stop? [enter]')
-    print('barcode detection test ended')
-    print(d.stop_listening())
-    rospy.sleep(.5)
+
+    kr = KnowRob()
+    s = BarcodeDetector(kr)
+    shelfs = kr.get_shelves()
+    for shelf_id in shelfs:
+        try:
+            floor = kr.get_floor_ids(shelf_id).keys()[2]
+            break
+        except:
+            pass
+    else:
+        print('no shelf has floors')
+    s.start_listening(shelf_id, floor)
+    rospy.sleep(5)
+    print(s.stop_listening())

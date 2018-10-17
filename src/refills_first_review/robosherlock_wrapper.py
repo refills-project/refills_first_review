@@ -36,7 +36,7 @@ class RoboSherlock(object):
         self.baseboard_detection = BaseboardDetector()
         self.barcode_detection = BarcodeDetector(knowrob)
         self.ring_light_srv = rospy.ServiceProxy('IAI_ringlight_controller', iai_ringlight_in)
-        self.floor_detection = True
+        self.floor_detection = False
         self.counting = True
         try:
             rospy.wait_for_service('/RoboSherlock/query', 1)
