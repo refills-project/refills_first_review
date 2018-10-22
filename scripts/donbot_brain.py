@@ -316,7 +316,7 @@ class CRAM(object):
         goal.header.frame_id = self.knowrob.get_perceived_frame_id(floor_id)
         if self.knowrob.is_hanging_foor(floor_id):
             # TODO magic offset
-            goal.pose.position.z = -goal.pose.position.z + 0.05
+            goal.pose.position.z = -goal.pose.position.z + 0.25
         goal = self.tf.transform_pose(self.move_arm.root, goal)
         goal.pose.position.x = COUNTING_OFFSET2
         self.move_arm.set_and_send_cartesian_goal(goal)
@@ -340,6 +340,7 @@ class CRAM(object):
                     self.move_base.STOP()
 
                 facing_type = 'hanging' if self.knowrob.is_hanging_foor(floor_id) else 'standing'
+                rospy.sleep(2)
                 count = self.robosherlock.count(product, width, left_sep, self.knowrob.get_perceived_frame_id(shelf_id),
                                                 facing_type)
                 try:

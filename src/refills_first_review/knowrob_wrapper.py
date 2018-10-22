@@ -68,7 +68,7 @@ class ActionGraph(object):
         global action_tree # type: list
         if len(action_tree) > 0:
             action_tree.pop(-1)
-        self.make_status_text()
+        # self.make_status_text()
         return self.parent_node
 
     def create_thingy(self, action_class, action_type):
@@ -111,7 +111,7 @@ class ActionGraph(object):
                     self.knowrob.prolog_query(q)
 
         action_tree.append([action_type, object_acted_on])
-        self.make_status_text()
+        # self.make_status_text()
         self.last_sub_action = ActionGraph(knowrob=self.knowrob, parent_node=self, previous_node=self.last_sub_action,
                                            id=new_id, type=sub_type)
         return self.last_sub_action
@@ -355,7 +355,7 @@ class KnowRob(object):
         current_floor_pose = self.tf.lookup_transform(MAP, self.get_object_frame_id(floor_id))
         current_floor_pose.pose.position.z += new_floor_height #- 0.015
         q = 'belief_at_update(\'{}\', {})'.format(floor_id, self.pose_to_prolog(current_floor_pose))
-        self.prolog_query(q)
+        # self.prolog_query(q)
 
         for p in separators:
             q = 'belief_shelf_part_at(\'{}\', {}, norm({}), _)'.format(floor_id, SEPARATOR, p.pose.position.x)
@@ -387,14 +387,14 @@ class KnowRob(object):
         return solutions[0]['Ss']
 
     def add_mounting_bars_and_barcodes(self, floor_id, separators, barcodes):
-        if len(separators) > 0:
-            for p in separators:
-                q = 'belief_shelf_part_at(\'{}\', {}, norm({}), _)'.format(floor_id, MOUNTING_BAR, p.pose.position.x)
-                self.prolog_query(q)
-        else:
-            for barcode, p in barcodes.items():
-                q = 'belief_shelf_part_at(\'{}\', {}, norm({}), _)'.format(floor_id, MOUNTING_BAR, p.pose.position.x+0.02)
-                self.prolog_query(q)
+        # if len(separators) > 0:
+        #     for p in separators:
+        #         q = 'belief_shelf_part_at(\'{}\', {}, norm({}), _)'.format(floor_id, MOUNTING_BAR, p.pose.position.x)
+        #         self.prolog_query(q)
+        # else:
+        for barcode, p in barcodes.items():
+            q = 'belief_shelf_part_at(\'{}\', {}, norm({}), _)'.format(floor_id, MOUNTING_BAR, p.pose.position.x+0.01)
+            self.prolog_query(q)
 
         for barcode, p in barcodes.items():
             q = 'belief_shelf_barcode_at(\'{}\', {}, dan(\'{}\'), norm({}), _)'.format(floor_id, BARCODE, barcode,

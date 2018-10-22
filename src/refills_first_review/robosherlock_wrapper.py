@@ -48,6 +48,7 @@ class RoboSherlock(object):
             self.robosherlock = False
 
         self.tf = TfWrapper()
+        self.set_ring_light(True)
 
     def set_ring_light(self, value=True):
         rospy.loginfo('calling ring light switch')

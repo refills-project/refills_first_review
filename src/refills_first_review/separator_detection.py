@@ -65,7 +65,7 @@ class SeparatorClustering(object):
                 if p is not None and self.separator_on_floor(p):
                     self.detections.append([p.pose.position.x, p.pose.position.y, p.pose.position.z])
 
-    def separator_on_floor(self, separator_pose, width_threshold=0.04, height_threshold=0.05):
+    def separator_on_floor(self, separator_pose, width_threshold=0.03, height_threshold=0.05):
         """
         :param separator_pose: pose of separator in floor frame
         :type separator_pose: PoseStamped
