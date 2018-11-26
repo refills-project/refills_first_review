@@ -3,10 +3,12 @@ from collections import OrderedDict, defaultdict
 from multiprocessing import Lock
 from rospkg import RosPack
 
+import PyKDL
 import rospy
 from geometry_msgs.msg import PoseStamped, Point, Quaternion
 import numpy as np
 
+from tf2_kdl import transform_to_kdl
 from visualization_msgs.msg import Marker
 
 from json_prolog import json_prolog
@@ -240,17 +242,34 @@ class KnowRob(object):
     # shelves
     def add_shelves(self, shelf_system_id, shelves):
         # TODO failure handling
-        for name, pose in shelves.items():
+        for name, pose in shelves.items(): #type: (str, PoseStamped)
             q = 'belief_new_object({}, ID), ' \
                 'rdf_assert(\'{}\', knowrob:properPhysicalParts, ID, belief_state),' \
                 'object_affordance_static_transform(ID, A, [_,_,T,R]),' \
                 'rdfs_individual_of(A, {})'.format(SHELF_METER, shelf_system_id, PERCEPTION_AFFORDANCE)
             solutions = self.prolog_query(q)[0]
-            pose.pose.position.x -= solutions['T'][0]
-            pose.pose.position.y -= solutions['T'][1]
-            pose.pose.position.z -= solutions['T'][2]
+            # pose.pose.position.x -= solutions['T'][0]
+            # pose.pose.position.y -= solutions['T'][1]
+            # pose.pose.position.z -= solutions['T'][2]
+
+            shelf_transform = PyKDL.Frame(PyKDL.Rotation.Quaternion(pose.pose.orientation.x,
+                                                                    pose.pose.orientation.y,
+                                                                    pose.pose.orientation.z,
+                                                                    pose.pose.orientation.w),
+                                          PyKDL.Vector(pose.pose.position.x,
+                                                       pose.pose.position.y,
+                                                       pose.pose.position.z))
+            shelf_offset = PyKDL.Frame(PyKDL.Vector(-solutions['T'][0], -solutions['T'][1], -solutions['T'][2]))
+            offset_shelf_transform = shelf_transform * shelf_offset # type: PyKDL.Frame
+            # transform = deepcopy(shelf.transform)  # Type: TransformStamped
+            # transform.transform = kdl_to_transform(offset_shelf_transform)
+            new_pose = PoseStamped()
+            new_pose.header = pose.header
+            new_pose.pose.position = Point(*offset_shelf_transform.p)
+            new_pose.pose.orientation = Quaternion(*offset_shelf_transform.M.GetQuaternion())
+
             object_id = solutions['ID'].replace('\'', '')
-            q = 'belief_at_update(\'{}\', {})'.format(object_id, self.pose_to_prolog(pose))
+            q = 'belief_at_update(\'{}\', {})'.format(object_id, self.pose_to_prolog(new_pose))
             solutions = self.prolog_query(q)
 
         return True

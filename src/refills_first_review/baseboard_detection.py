@@ -42,13 +42,13 @@ class Shelf(object):
         return True
 
     def is_left(self, number):
-        return number % 2 == 0
+        return number % 2 == 1
 
     def id_from_number(self, number):
-        if number % 2 != 0:
+        if not self.is_left(number):
             number -= 1
-        number /= 2
-        number -= 10
+        # number /= 2
+        # number -= 10
         return int(number)
 
     def is_complete(self):
@@ -88,12 +88,12 @@ class Shelf(object):
         x = right - left
         x = x / np.linalg.norm(x)
         z = [0, 0, 1]
-        y = -np.cross(x, z)
+        y = np.cross(z,x)
         y = y / np.linalg.norm(y)
         q = quaternion_from_matrix([
-            [x[0], x[1], x[2], 0],
-            [y[0], y[1], y[2], 0],
-            [z[0], z[1], z[2], 0],
+            [x[0], y[0], z[0], 0],
+            [x[1], y[1], z[1], 0],
+            [x[2], y[2], z[2], 0],
             [0.0, 0.0, 0.0, 1.0],
         ])
         return q / np.linalg.norm(q)

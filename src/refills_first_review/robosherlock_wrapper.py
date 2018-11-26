@@ -26,6 +26,7 @@ FLOORS = {
 
 MAP = 'map'
 
+
 class RoboSherlock(object):
     def __init__(self, knowrob):
         self.knowrob = knowrob
@@ -36,7 +37,7 @@ class RoboSherlock(object):
         self.baseboard_detection = BaseboardDetector()
         self.barcode_detection = BarcodeDetector(knowrob)
         self.ring_light_srv = rospy.ServiceProxy('IAI_ringlight_controller', iai_ringlight_in)
-        self.floor_detection = False
+        self.floor_detection = True
         self.counting = True
         try:
             rospy.wait_for_service('/RoboSherlock/query', 1)
@@ -118,6 +119,7 @@ class RoboSherlock(object):
                       'command': 'stop'}}
             req.query = json.dumps(q)
             print('robosherlock_service.call(req) START 2')
+
             result = self.robosherlock_service.call(req)
             print('robosherlock_service.call(req) END 2')
             floors = []
@@ -141,16 +143,21 @@ class RoboSherlock(object):
             floors = FLOORS[int(shelf_pose.pose.position.x)]
         return floors
 
-    def count(self, product, width, left_separator, perceived_shelf_frame_id, facing_type='standing'):
+    def count(self, facing_id, perceived_shelf_frame_id):
         self.set_ring_light(True)
         if self.robosherlock and self.counting:
-            ls = self.tf.lookup_transform(perceived_shelf_frame_id,
-                                          self.knowrob.get_perceived_frame_id(left_separator))
-            q = {'detect':{
-                'type': product,
-                'pose_stamped': convert_ros_message_to_dictionary(ls),
-                'shelf_type': facing_type,
-                'width': width,
+            # ls = self.tf.lookup_transform(perceived_shelf_frame_id,
+            #                               self.knowrob.get_perceived_frame_id(left_separator))
+            # q = {'detect':{
+            #     'type': product,
+            #     'pose_stamped': convert_ros_message_to_dictionary(ls),
+            #     'shelf_type': facing_type,
+            #     'width': width,
+            #     'location': perceived_shelf_frame_id
+            # }}
+
+            q = {'detect': {
+                'facing': facing_id,
                 'location': perceived_shelf_frame_id
             }}
             print(q)
@@ -167,7 +174,6 @@ class RoboSherlock(object):
         # self.set_ring_light(True)
         return count
         # return 1
-
 
 # if __name__ == '__main__':
 #     rospy.init_node('muh')

@@ -341,8 +341,9 @@ class CRAM(object):
 
                 facing_type = 'hanging' if self.knowrob.is_hanging_foor(floor_id) else 'standing'
                 rospy.sleep(2)
-                count = self.robosherlock.count(product, width, left_sep, self.knowrob.get_perceived_frame_id(shelf_id),
-                                                facing_type)
+                # count = self.robosherlock.count(product, width, left_sep, self.knowrob.get_perceived_frame_id(shelf_id),
+                #                                 facing_type)
+                count = self.robosherlock.count(facing_id, self.knowrob.get_perceived_frame_id(shelf_id))
                 try:
                     self.save_image_srv.call(saveImageRequest(NameForPicture=int(product.split('AN')[1])))
                     rospy.loginfo('image saved')
