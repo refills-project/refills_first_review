@@ -15,7 +15,7 @@ from tf.transformations import quaternion_from_matrix, quaternion_from_euler, qu
 from tf2_msgs.msg import TFMessage
 from visualization_msgs.msg import Marker, MarkerArray
 
-from refills_first_review.tfwrapper import TfWrapper
+from refills_first_review.tfwrapper import transform_pose
 
 MAP = 'map'
 
@@ -107,7 +107,6 @@ class BaseboardDetector(object):
         # TODO use paramserver [low]
         self.shelf_width = 1
 
-        self.tf = TfWrapper()
         self.marker_pub = rospy.Publisher('visualization_marker_array', MarkerArray, queue_size=10)
         self.marker_ns = 'baseboard_marker'
 
@@ -135,20 +134,20 @@ class BaseboardDetector(object):
         y = -0.615
         x = 0.66-MARKER_OFFSET
         if '0' in ids:
-            s1 = Shelf(20, [x, y, 0])
-            s1.add_measurement(21, [1+x, y, 0])
+            s1 = Shelf(1, [x, y, 0])
+            s1.add_measurement(2, [1+x, y, 0])
             self.shelves.append(s1)
         if '1' in ids:
-            s2 = Shelf(22, [1+x, y, 0])
-            s2.add_measurement(23, [2+x, y, 0])
+            s2 = Shelf(3, [1+x, y, 0])
+            s2.add_measurement(4, [2+x, y, 0])
             self.shelves.append(s2)
         if '2' in ids:
-            s3 = Shelf(24, [2+x, y, 0])
-            s3.add_measurement(25, [3+x, y, 0])
+            s3 = Shelf(5, [2+x, y, 0])
+            s3.add_measurement(6, [3+x, y, 0])
             self.shelves.append(s3)
         if '3' in ids:
-            s4 = Shelf(26, [3+x, y, 0])
-            s4.add_measurement(27, [4+x, y, 0])
+            s4 = Shelf(7, [3+x, y, 0])
+            s4.add_measurement(8, [4+x, y, 0])
             self.shelves.append(s4)
         y = -0.615
         x = 0.66-MARKER_OFFSET
@@ -180,7 +179,7 @@ class BaseboardDetector(object):
                                        msg.transform.translation.y,
                                        msg.transform.translation.z)
             pose.pose.orientation.w = 1
-            pose = self.tf.transform_pose(MAP, pose)
+            pose = transform_pose(MAP, pose)
             if pose is not None:
                 position = [pose.pose.position.x, pose.pose.position.y, pose.pose.position.z]
                 for shelf in self.shelves:

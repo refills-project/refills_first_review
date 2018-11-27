@@ -14,14 +14,13 @@ from tf.transformations import quaternion_about_axis
 from visualization_msgs.msg import Marker, MarkerArray
 
 from refills_first_review.knowrob_wrapper import KnowRob
-from refills_first_review.tfwrapper import TfWrapper
+from refills_first_review.tfwrapper import transform_pose
 
 
 class SeparatorClustering(object):
     def __init__(self, knowrob):
         self.knowrob = knowrob
         # TODO use paramserver [low]
-        self.tf = TfWrapper(6)
         self.marker_pub = rospy.Publisher('visualization_marker_array', MarkerArray, queue_size=10)
         self.detections = []
         self.map_frame_id = 'map'
@@ -61,7 +60,7 @@ class SeparatorClustering(object):
         if self.listen:
             frame_id = self.knowrob.get_perceived_frame_id(self.current_floor_id)
             for separator in separator_array.separators:
-                p = self.tf.transform_pose(frame_id, separator.separator_pose)
+                p = transform_pose(frame_id, separator.separator_pose)
                 if p is not None and self.separator_on_floor(p):
                     self.detections.append([p.pose.position.x, p.pose.position.y, p.pose.position.z])
 

@@ -15,7 +15,7 @@ from std_srvs.srv import SetBool, SetBoolRequest
 from refills_first_review.barcode_detection import BarcodeDetector
 from refills_first_review.baseboard_detection import BaseboardDetector
 from refills_first_review.separator_detection import SeparatorClustering
-from refills_first_review.tfwrapper import TfWrapper
+from refills_first_review.tfwrapper import transform_pose, lookup_transform
 
 FLOORS = {
     0: [[0, 0, 0.15], [0, 0.1, 0.55], [0, 0.1, 0.88], [0, 0.1, 1.17], [0, 0.1, 1.43]],
@@ -48,7 +48,6 @@ class RoboSherlock(object):
             rospy.logwarn('robosherlock not available; activating fake perception')
             self.robosherlock = False
 
-        self.tf = TfWrapper()
         self.set_ring_light(True)
 
     def set_ring_light(self, value=True):
@@ -126,27 +125,27 @@ class RoboSherlock(object):
             for floor in result.answer:
                 p = message_converter.convert_dictionary_to_ros_message('geometry_msgs/PoseStamped',
                                                                         json.loads(floor)['poses'][0]['pose_stamped'])
-                p = self.tf.transform_pose(shelf_frame, p)
+                p = transform_pose(shelf_frame, p)
                 floors.append([0,
                                p.pose.position.y,
                                p.pose.position.z])
             floors = list(sorted(floors, key=lambda x: x[-1]))
-            floors = [x for x in floors if x[-1] > 0.3]
-            floors = [FLOORS[0][0]] + floors
+            # floors = [x for x in floors if x[-1] > 0.3]
+            # floors = [FLOORS[0][0]] + floors
             print('detected shelfs at heights: {}'.format(floors))
 
             # TODO remove this if floor detection works
-            # shelf_pose = self.tf.lookup_transform(MAP, shelf_frame)
+            # shelf_pose = lookup_transform(MAP, shelf_frame)
             # floors = FLOORS[int(shelf_pose.pose.position.x)]
         else:
-            shelf_pose = self.tf.lookup_transform(MAP, shelf_frame)
+            shelf_pose = lookup_transform(MAP, shelf_frame)
             floors = FLOORS[int(shelf_pose.pose.position.x)]
         return floors
 
     def count(self, facing_id, perceived_shelf_frame_id):
         self.set_ring_light(True)
         if self.robosherlock and self.counting:
-            # ls = self.tf.lookup_transform(perceived_shelf_frame_id,
+            # ls = lookup_transform(perceived_shelf_frame_id,
             #                               self.knowrob.get_perceived_frame_id(left_separator))
             # q = {'detect':{
             #     'type': product,

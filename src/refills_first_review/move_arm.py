@@ -1,15 +1,16 @@
+
 import rospy
 from actionlib import SimpleActionClient
 from geometry_msgs.msg import Quaternion, Point, PoseStamped, QuaternionStamped, PointStamped
 from giskard_msgs.msg import Controller, ControllerListGoal, ControllerListAction
 from sensor_msgs.msg import JointState
 from std_msgs.msg import Header
-from tf.transformations import quaternion_about_axis
-
+from tf.transformations import quaternion_about_axis, quaternion_from_matrix
+import numpy as np
 
 class GiskardWrapper(object):
     def __init__(self, giskard_action_name='/qp_controller/command', enabled=True, knowrob=None):
-        self.move_time_limit = 25
+        self.move_time_limit = 120
         self.enabled = enabled
         self.knowrob = knowrob
         self.client = SimpleActionClient(giskard_action_name, ControllerListAction)
@@ -133,26 +134,39 @@ class GiskardWrapper(object):
         joint_state = JointState()
         joint_state.name = self.joint_names
         joint_state.position = [
-            -1.63407260576,
-            -1.4751423041,
-            0.677300930023,
-            -2.12363607088,
-            -1.50967580477,
-            1.55717146397,
+            0.0,
+            -1.768,
+            -0.51,
+            -2.396,
+            0.2181,
+            -3.191,
         ]
         self.send_joint_goal(joint_state)
+    # def floor_detection_pose(self):
+    #     joint_state = JointState()
+    #     joint_state.name = self.joint_names
+    #     joint_state.position = [
+    #         -np.pi,
+    #         -1.52270842207,
+    #         0.541624814496,
+    #         -1.0,
+    #         -0.23,
+    #         0.4,
+    #     ]
+    #     self.send_joint_goal(joint_state)
+
+
 
     def drive_pose(self):
         joint_state = JointState()
         joint_state.name = self.joint_names
         joint_state.position = [
-            -1.54838782946,
-            -2.51830751101,
-            1.37984895706,
-            -2.07125074068,
-            -1.59281522432,
-            1.56871032715,
-
+            0,
+            -0.88,
+            -1.351,
+            -2.4346,
+            0.21823,
+            -3.199,
         ]
         self.send_joint_goal(joint_state)
 
@@ -160,20 +174,24 @@ class GiskardWrapper(object):
         joint_state = JointState()
         joint_state.name = self.joint_names
         joint_state.position = [
-            -1.56896144549,
-            -1.2928908507,
-            1.59626483917,
-            -2.61700326601,
-            -1.54511577288,
-            1.54054629803,
+            0.0,
+            -1.6460,
+            -2.171,
+            -0.85549,
+            0.2181,
+            -3.19172,
         ]
         self.send_joint_goal(joint_state)
 
 
 if __name__ == '__main__':
     rospy.init_node('separator_detection_test')
-    ma = GiskardWrapper()
-    # ma.floor_detection_pose2()
-    ma.set_orientation_goal(QuaternionStamped(Header(0, rospy.Time(), ma.root),
-                                              Quaternion(0., -0.70660617, 0.70760703, 0.)))
-    ma.send_cartesian_goal()
+    g = GiskardWrapper()
+    # qs = QuaternionStamped()
+    # qs.quaternion = Quaternion(*quaternion_from_matrix(np.array([[1,0,0,0],[0,0,1,0],[0,-1,0,0],[0,0,0,1]])))
+    # qs.header.frame_id = 'base_footprint'
+    # ps = PointStamped()
+    # ps.header.frame_id = 'camera_link'
+    # g.set_orientation_goal(qs)
+    # g.set_translation_goal(ps)
+    # g.send_cartesian_goal()

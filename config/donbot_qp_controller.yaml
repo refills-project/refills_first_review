@@ -4,6 +4,6 @@ default_joint_weight: 0.001
 default_joint_velocity: 0.25
 default_joint_convergence_threshold: 0.001
 min_num_traj_points: 50
-max_num_traj_points: 500
+max_num_traj_points: 2000
 nWSR: 100
 sample_period: 0.02

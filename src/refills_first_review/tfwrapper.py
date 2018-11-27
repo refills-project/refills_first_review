@@ -1,62 +1,116 @@
-import tf
 import rospy
-from geometry_msgs.msg import PoseStamped, Transform, TransformStamped
-from tf2_geometry_msgs import do_transform_pose
+from geometry_msgs.msg import PoseStamped, Vector3Stamped, PointStamped, TransformStamped
+from tf2_geometry_msgs import do_transform_pose, do_transform_vector3, do_transform_point
 from tf2_py._tf2 import ExtrapolationException
-from tf2_ros import Buffer, TransformListener, StaticTransformBroadcaster
-from multiprocessing import Lock
+from tf2_ros import Buffer, TransformListener, TransformBroadcaster
+
+tfBuffer = None
+tf_listener = None
 
 
-class TfWrapper(object):
-    def __init__(self, buffer_size=2):
-        self.tfBuffer = Buffer(rospy.Duration(buffer_size))
-        self.tf_listener = TransformListener(self.tfBuffer)
-        self.tf_static = StaticTransformBroadcaster()
-        self.tf_frequency = rospy.Duration(1.0)
-        self.broadcasting_frames = []
-        self.broadcasting_frames_lock = Lock()
-        rospy.sleep(0.1)
+def init(tf_buffer_size=10):
+    """
+    If you want to specify the buffer size, call this function manually, otherwise don't worry about it.
+    :param tf_buffer_size: in secs
+    :type tf_buffer_size: int
+    """
+    global tfBuffer, tf_listener
+    tfBuffer = Buffer(rospy.Duration(tf_buffer_size))
+    tf_listener = TransformListener(tfBuffer)
+    rospy.sleep(0.1)
 
-    def transform_pose(self, target_frame, pose):
-        try:
-            transform = self.tfBuffer.lookup_transform(target_frame,
-                                                       pose.header.frame_id,  # source frame
-                                                       pose.header.stamp,
-                                                       rospy.Duration(10.0))
-            new_pose = do_transform_pose(pose, transform)
-            return new_pose
-        except ExtrapolationException as e:
-            rospy.logwarn(e)
 
-    def lookup_transform(self, target_frame, source_frame):
-        p = PoseStamped()
-        p.header.frame_id = source_frame
-        p.pose.orientation.w = 1.0
-        return self.transform_pose(target_frame, p)
+def transform_pose(target_frame, pose):
+    """
+    Transforms a pose stamped into a different target frame.
+    :type target_frame: str
+    :type pose: PoseStamped
+    :return: Transformed pose of None on loop failure
+    :rtype: PoseStamped
+    """
+    global tfBuffer
+    if tfBuffer is None:
+        init()
+    try:
+        transform = tfBuffer.lookup_transform(target_frame,
+                                              pose.header.frame_id,  # source frame
+                                              pose.header.stamp,
+                                              rospy.Duration(5.0))
+        new_pose = do_transform_pose(pose, transform)
+        return new_pose
+    except ExtrapolationException as e:
+        rospy.logwarn(e)
 
-    def add_frame_from_pose(self, name, pose_stamped):
-        with self.broadcasting_frames_lock:
-            frame = TransformStamped()
-            frame.header = pose_stamped.header
-            frame.child_frame_id = name
-            frame.transform.translation = pose_stamped.pose.position
-            frame.transform.rotation = pose_stamped.pose.orientation
-            self.broadcasting_frames.append(frame)
 
-    def start_frame_broadcasting(self):
-        self.tf_broadcaster = tf.TransformBroadcaster()
-        self.tf_timer = rospy.Timer(self.tf_frequency, self.broadcasting_cb)
+def transform_vector(target_frame, vector):
+    """
+    Transforms a pose stamped into a different target frame.
+    :type target_frame: str
+    :type vector: Vector3Stamped
+    :return: Transformed pose of None on loop failure
+    :rtype: Vector3Stamped
+    """
+    global tfBuffer
+    if tfBuffer is None:
+        init()
+    try:
+        transform = tfBuffer.lookup_transform(target_frame,
+                                              vector.header.frame_id,  # source frame
+                                              vector.header.stamp,
+                                              rospy.Duration(5.0))
+        new_pose = do_transform_vector3(vector, transform)
+        return new_pose
+    except ExtrapolationException as e:
+        rospy.logwarn(e)
 
-    def broadcasting_cb(self, data):
-        with self.broadcasting_frames_lock:
-            for frame in self.broadcasting_frames:
-                frame.header.stamp = rospy.get_rostime()
-                self.tf_broadcaster.sendTransformMessage(frame)
 
-    def broadcast_static_frame(self, name, pose_stamped):
-        frame = TransformStamped()
-        frame.header = pose_stamped.header
-        frame.child_frame_id = name
-        frame.transform.translation = pose_stamped.pose.position
-        frame.transform.rotation = pose_stamped.pose.orientation
-        self.tf_static.sendTransform(frame)
+def transform_point(target_frame, point):
+    """
+    Transforms a pose stamped into a different target frame.
+    :type target_frame: str
+    :type point: PointStamped
+    :return: Transformed pose of None on loop failure
+    :rtype: PointStamped
+    """
+    global tfBuffer
+    if tfBuffer is None:
+        init()
+    try:
+        transform = tfBuffer.lookup_transform(target_frame,
+                                              point.header.frame_id,  # source frame
+                                              point.header.stamp,
+                                              rospy.Duration(5.0))
+        new_pose = do_transform_point(point, transform)
+        return new_pose
+    except ExtrapolationException as e:
+        rospy.logwarn(e)
+
+
+def lookup_transform(target_frame, source_frame):
+    """
+    :type target_frame: str
+    :type source_frame: str
+    :return: Transform from target_frame to source_frame
+    :rtype: PoseStamped
+    """
+    p = PoseStamped()
+    p.header.frame_id = source_frame
+    p.pose.orientation.w = 1.0
+    return transform_pose(target_frame, p)
+
+
+def lookup_transform2(target_frame, source_frame, time=rospy.Time()):
+    """
+    :type target_frame: str
+    :type source_frame: str
+    :return: Transform from target_frame to source_frame
+    :rtype: TransformStamped
+    """
+    global tfBuffer
+    if tfBuffer is None:
+        init()
+    try:
+        transform = tfBuffer.lookup_transform(target_frame, source_frame, time, rospy.Duration(10.0))
+        return transform
+    except:
+        return None

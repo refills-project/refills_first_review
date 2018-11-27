@@ -1,4 +1,5 @@
 import json
+import traceback
 from collections import OrderedDict, defaultdict
 from multiprocessing import Lock
 from rospkg import RosPack
@@ -13,16 +14,23 @@ from visualization_msgs.msg import Marker
 
 from json_prolog import json_prolog
 from json_prolog.json_prolog import PrologException
-from refills_first_review.tfwrapper import TfWrapper
+from refills_first_review.tfwrapper import lookup_transform, transform_pose
+from refills_first_review.utils import posestamped_to_kdl
 
 MAP = 'map'
 SHOP = 'shop'
 SHELF_FLOOR = '{}:\'ShelfLayer\''.format(SHOP)
 DM_MARKET = 'dmshop'
 SHELF_SYSTEM = '{}:\'DMShelfSystem\''.format(DM_MARKET)
-SHELF_METER = '{}:\'DMShelfFrameFrontStore\''.format(DM_MARKET)
-SHELF_FLOOR_STANDING = '{}:\'DMShelfLayer4TilesFront\''.format(DM_MARKET)
-SHELF_FLOOR_STANDING_GROUND = '{}:\'DMShelfLayer5TilesBottom\''.format(DM_MARKET)
+SHELF_METERT5 = '{}:\'DMShelfFrameFrontStore\''.format(DM_MARKET)
+SHELF_METERT6 = '{}:\'DMShelfFrameH200W100T6\''.format(DM_MARKET)
+SHELF_METERT7 = '{}:\'DMShelfFrameH200W100T7\''.format(DM_MARKET)
+SHELF_FLOOR_STANDINGT4 = '{}:\'DMShelfLayer4TilesFront\''.format(DM_MARKET)
+SHELF_FLOOR_STANDINGT5 = '{}:\'DMShelfLayer5TilesFront\''.format(DM_MARKET)
+SHELF_FLOOR_STANDINGT6 = '{}:\'DMShelfLayer6TilesFront\''.format(DM_MARKET)
+SHELF_FLOOR_STANDING_GROUNDT5 = '{}:\'DMShelfLayer5TilesBottom\''.format(DM_MARKET)
+SHELF_FLOOR_STANDING_GROUNDT6 = '{}:\'DMShelfLayer6TilesBottom\''.format(DM_MARKET)
+SHELF_FLOOR_STANDING_GROUNDT7 = '{}:\'DMShelfLayer7TilesBottom\''.format(DM_MARKET)
 SHELF_FLOOR_MOUNTING = '{}:\'DMShelfLayerMountingFront\''.format(DM_MARKET)
 SEPARATOR = '{}:\'DMShelfSeparator4Tiles\''.format(DM_MARKET)
 MOUNTING_BAR = '{}:\'DMShelfMountingBar\''.format(DM_MARKET)
@@ -178,45 +186,54 @@ class ActionGraph(object):
             self.status_pub.publish(m)
 
 class KnowRob(object):
+    prefix = 'knowrob_wrapper'
     def __init__(self):
-        # TODO use paramserver [low]
-        self.floors = {}
-        self.shelf_ids = []
+        super(KnowRob, self).__init__()
+        self.action_graph = None
+        # self.read_left_right_json()
         self.separators = {}
         self.perceived_frame_id_map = {}
-        self.action_graph = None
-        self.tf = TfWrapper()
         self.prolog = json_prolog.Prolog()
+        self.print_with_prefix('waiting for knowrob')
+        self.prolog.wait_for_service()
+        self.print_with_prefix('knowrob showed up')
         self.query_lock = Lock()
 
+    def print_with_prefix(self, txt):
+        print(txt)
+
     def prolog_query(self, q):
+        """
+        :type q: str
+        :rtype: dict
+        """
         with self.query_lock:
-            print('prolog_query(): sending {}'.format(q))
+            self.print_with_prefix('sending {}'.format(q))
             while True:
                 try:
                     solutions = [x if x != {} else True for x in self.prolog.query(q).solutions()]
                     break
                 except PrologException as e:
-                    print('prolog query failed {}'.format(e))
-                    cmd = raw_input('retry? [y/n]')
-                    retry = cmd == 'y'
+                    self.print_with_prefix('exception {}'.format(e))
+                    # TODO enable retry?
+                    retry = False
+                    # cmd = raw_input('retry? [y/n]')
+                    # retry = cmd == 'y'
                     if not retry:
                         raise PrologException(e.message)
             # if len(solutions) > 1:
             #     rospy.logwarn('{} returned more than one result'.format(q))
             # elif len(solutions) == 0:
             #     rospy.logwarn('{} returned nothing'.format(q))
-            print('prolog_query(): solutions {}'.format(solutions))
-            print('----------------------')
+            self.print_with_prefix('solutions {}'.format(solutions))
             return solutions
 
-    def remove_http_shit(self, s):
-        return s.split('#')[-1].split('\'')[0]
-
-    def load_barcode_to_mesh_map(self):
-        self.barcode_to_mesh = json.load(open('../../data/barcode_to_mesh.json'))
-
     def pose_to_prolog(self, pose_stamped):
+        """
+        :type pose_stamped: PoseStamped
+        :return: PoseStamped in a form the knowrob likes
+        :rtype: str
+        """
         return '[\'{}\', _, [{},{},{}], [{},{},{},{}]]'.format(pose_stamped.header.frame_id,
                                                                pose_stamped.pose.position.x,
                                                                pose_stamped.pose.position.y,
@@ -227,11 +244,332 @@ class KnowRob(object):
                                                                pose_stamped.pose.orientation.w)
 
     def prolog_to_pose_msg(self, query_result):
+        """
+        :type query_result: list
+        :rtype: PoseStamped
+        """
         ros_pose = PoseStamped()
         ros_pose.header.frame_id = query_result[0]
         ros_pose.pose.position = Point(*query_result[2])
         ros_pose.pose.orientation = Quaternion(*query_result[3])
         return ros_pose
+
+    def read_left_right_json(self):
+        self.path_to_json = rospy.get_param('~path_to_json')
+        self.left_right_dict = {}
+        with open(self.path_to_json, 'r') as f:
+            self.left_right_dict.update(json.load(f))
+
+    def is_left(self, shelf_system_id):
+        return self.left_right_dict[shelf_system_id] == u'left'
+
+    def is_right(self, shelf_system_id):
+        return self.left_right_dict[shelf_system_id] == u'right'
+
+    def get_shelf_system_ids(self):
+        """
+        :return: list of str
+        :rtype: list
+        """
+        ids = []
+        ids.extend(self.get_objects(SHELF_METERT6).keys())
+        ids.extend(self.get_objects(SHELF_METERT7).keys())
+        ids.extend(self.get_objects(SHELF_METERT5).keys())
+        return ids
+
+    def is_6tile_system(self, shelf_system_id):
+        return shelf_system_id in self.get_objects(SHELF_METERT6)
+
+    def is_7tile_system(self, shelf_system_id):
+        return shelf_system_id in self.get_objects(SHELF_METERT7)
+
+    def get_bottom_layer_type(self, shelf_system_id):
+        if self.is_6tile_system(shelf_system_id):
+            return SHELF_FLOOR_STANDING_GROUNDT6
+        if self.is_7tile_system(shelf_system_id):
+            return SHELF_FLOOR_STANDING_GROUNDT7
+        else:
+            return SHELF_FLOOR_STANDING_GROUNDT5
+
+    def get_standing_layer_type(self, shelf_system_id):
+        if self.is_6tile_system(shelf_system_id):
+            return SHELF_FLOOR_STANDINGT5
+        if self.is_7tile_system(shelf_system_id):
+            return SHELF_FLOOR_STANDINGT6
+        else:
+            return SHELF_FLOOR_STANDINGT4
+
+    def get_shelf_layer_from_system(self, shelf_system_id):
+        """
+        :type shelf_system_id: str
+        :return: returns dict mapping floor id to pose ordered from lowest to highest
+        :rtype: dict
+        """
+        q = 'rdf_has(\'{}\', knowrob:properPhysicalParts, Floor), ' \
+            'rdfs_individual_of(Floor, {}), ' \
+            'object_perception_affordance_frame_name(Floor, Frame).'.format(shelf_system_id, SHELF_FLOOR)
+
+        solutions = self.prolog_query(q)
+        floors = []
+        shelf_frame_id = self.get_perceived_frame_id(shelf_system_id)
+        for solution in solutions:
+            floor_id = solution['Floor'].replace('\'', '')
+            floor_pose = lookup_transform(shelf_frame_id, solution['Frame'].replace('\'', ''))
+            floors.append((floor_id, floor_pose))
+        floors = list(sorted(floors, key=lambda x: -x[1].pose.position.z))
+        self.floors = OrderedDict(floors)
+        return self.floors
+
+    def get_facing_ids_from_layer(self, shelf_layer_id):
+        """
+        :type shelf_layer_id: str
+        :return:
+        :rtype: OrderedDict
+        """
+        shelf_system_id = self.get_shelf_system_from_layer(shelf_layer_id)
+        q = 'findall([F, P], (shelf_facing(\'{}\', F),belief_at(F, P)), Fs).'.format(shelf_layer_id)
+        solutions = self.prolog_query(q)[0]
+        facings = []
+        for facing_id, pose in solutions['Fs']:
+            facing_pose = self.prolog_to_pose_msg(pose)
+            facing_pose = transform_pose(self.get_perceived_frame_id(shelf_layer_id), facing_pose)
+            facings.append((facing_id, facing_pose))
+        is_left = 1 if self.is_left(shelf_system_id) else -1
+        facings = list(sorted(facings, key=lambda x: x[1].pose.position.x * is_left))
+        return OrderedDict(facings)
+
+    def shelf_system_exists(self, shelf_system_id):
+        """
+        :type shelf_system_id: str
+        :rtype: bool
+        """
+        return shelf_system_id in self.get_shelf_system_ids()
+
+    def shelf_layer_exists(self, shelf_layer_id):
+        """
+        :type shelf_layer_id: str
+        :rtype: bool
+        """
+        q = 'shelf_layer_frame(\'{}\', _).'.format(shelf_layer_id)
+        return len(self.prolog_query(q)) != 0
+
+    def facing_exists(self, facing_id):
+        """
+        :type facing_id: str
+        :rtype: bool
+        """
+        q = 'shelf_facing(L, \'{}\').'.format(facing_id)
+        return len(self.prolog_query(q)) != 0
+
+    def get_objects(self, object_type):
+        """
+        Ask knowrob for a specific type of objects
+        :type object_type: str
+        :return: all objects of the given type
+        :rtype: dict
+        """
+        objects = OrderedDict()
+        q = 'rdfs_individual_of(R, {}).'.format(object_type)
+        solutions = self.prolog_query(q)
+        for solution in solutions:
+            object_id = solution['R'].replace('\'', '')
+            pose_q = 'belief_at(\'{}\', R).'.format(object_id)
+            believed_pose = self.prolog_query(pose_q)[0]['R']
+            ros_pose = PoseStamped()
+            ros_pose.header.frame_id = believed_pose[0]
+            ros_pose.pose.position = Point(*believed_pose[2])
+            ros_pose.pose.orientation = Quaternion(*believed_pose[3])
+            objects[str(object_id)] = ros_pose
+        return objects
+
+    def get_perceived_frame_id(self, object_id):
+        """
+        :type object_id: str
+        :return: the frame_id of an object according to the specifications in our wiki.
+        :rtype: str
+        """
+        if object_id not in self.perceived_frame_id_map:
+            q = 'object_perception_affordance_frame_name(\'{}\', F)'.format(object_id)
+            self.perceived_frame_id_map[object_id] = self.prolog_query(q)[0]['F'].replace('\'', '')
+        return self.perceived_frame_id_map[object_id]
+
+    def get_object_frame_id(self, object_id):
+        """
+        :type object_id: str
+        :return: frame_id of the center of mesh.
+        :rtype: str
+        """
+        q = 'object_frame_name(\'{}\', R).'.format(object_id)
+        return self.prolog_query(q)[0]['R'].replace('\'', '')
+
+    # floor
+    def add_shelf_layers(self, shelf_system_id, floor_heights):
+        """
+        :param shelf_system_id: layers will be attached to this shelf system.
+        :type shelf_system_id: str
+        :param floor_heights: heights of the detects layers, list of floats
+        :type floor_heights: list
+        :return: TODO
+        :rtype: bool
+        """
+        # TODO return false on failure
+        # TODO support different types of shelf layer
+        for i, height in enumerate(sorted(floor_heights)):
+            if i == 0:
+                layer_type = self.get_bottom_layer_type(shelf_system_id)
+            else:
+                layer_type = self.get_standing_layer_type(shelf_system_id)
+            q = 'belief_shelf_part_at(\'{}\', {}, {}, R)'.format(shelf_system_id, layer_type, height[-1])
+            self.prolog_query(q)
+        return True
+
+    def update_shelf_layer_position(self, shelf_layer_id, separators):
+        """
+        :type shelf_layer_id: str
+        :type separators: list of PoseStamped, positions of separators
+        """
+        new_floor_height = np.mean([transform_pose(self.get_perceived_frame_id(shelf_layer_id), p).pose.position.z for p in separators])
+        current_floor_pose = lookup_transform(MAP, self.get_object_frame_id(shelf_layer_id))
+        current_floor_pose.pose.position.z += new_floor_height  # - 0.015
+        q = 'belief_at_update(\'{}\', {})'.format(shelf_layer_id, self.pose_to_prolog(current_floor_pose))
+        self.prolog_query(q)
+
+    def add_separators(self, shelf_layer_id, separators):
+        """
+        :param shelf_layer_id: separators will be attached to this shelf layer.
+        :type shelf_layer_id: str
+        :param separators: list of PoseStamped, positions of separators
+        :return:
+        """
+        # TODO check success
+        for p in separators:
+            q = 'belief_shelf_part_at(\'{}\', {}, {}, _)'.format(shelf_layer_id, SEPARATOR, p.pose.position.x)
+            try:
+                self.prolog_query(q)
+            except Exception as e:
+                traceback.print_exc()
+                return False
+        return True
+
+    def add_barcodes(self, shelf_layer_id, barcodes):
+        """
+        :param shelf_layer_id: barcodes will be attached to this shelf layer
+        :type shelf_layer_id: str
+        :param barcodes: dict mapping barcode to PoseStamped. make sure it relative to shelf layer, everything but x ignored
+        :type barcodes: dict
+        """
+        # TODO check success
+        for barcode, p in barcodes.items():
+            q = 'belief_shelf_barcode_at(\'{}\', {}, dan(\'{}\'), {}, _)'.format(shelf_layer_id, BARCODE,
+                                                                                 barcode, p.pose.position.x)
+            self.prolog_query(q)
+
+    def get_all_product_dan(self):
+        """
+        :return: list of str
+        :rtype: list
+        """
+        q = 'findall(DAN,rdf_has_prolog(AN,shop:dan,DAN), DANS)'
+        dans = self.prolog_query(q)[0]['DANS']
+        return dans
+
+    def add_objects(self, facing_id, number):
+        """
+        Adds objects to the facing whose type is according to the barcode.
+        :type facing_id: str
+        :type number: int
+        """
+        for i in range(number):
+            q = 'product_spawn_front_to_back(\'{}\', ObjId)'.format(facing_id)
+            self.prolog_query(q)
+
+    def save_beliefstate(self, path=None):
+        """
+        :type path: str
+        """
+        if path is None:
+            path = '{}/data/beliefstate.owl'.format(RosPack().get_path('refills_first_review'))
+        q = 'rdf_save(\'{}\', belief_state)'.format(path)
+        self.prolog_query(q)
+
+    def get_shelf_layer_width(self, shelf_layer_id):
+        """
+        :type shelf_layer_id: str
+        :rtype: float
+        """
+        q = 'object_dimensions(\'{}\', D, W, H).'.format(shelf_layer_id)
+        solution = self.prolog_query(q)[0]
+        width = solution['W']
+        return width
+
+    def get_shelf_system_width(self, shelf_system_id):
+        """
+        :type shelf_system_id: str
+        :rtype: float
+        """
+        q = 'object_dimensions(\'{}\', D, W, H).'.format(shelf_system_id)
+        solution = self.prolog_query(q)[0]
+        width = solution['W']
+        return width
+
+    def get_shelf_system_height(self, shelf_system_id):
+        """
+        :type shelf_system_id: str
+        :rtype: float
+        """
+        q = 'object_dimensions(\'{}\', D, W, H).'.format(shelf_system_id)
+        solution = self.prolog_query(q)[0]
+        height = solution['H']
+        return height
+
+    def get_shelf_system_from_layer(self, shelf_layer_id):
+        """
+        :type shelf_layer_id: str
+        :rtype: str
+        """
+        q = 'shelf_layer_frame(\'{}\', Frame).'.format(shelf_layer_id)
+        return self.prolog_query(q)[0]['Frame'][1:-1]
+
+    def get_shelf_layer_from_facing(self, facing_id):
+        """
+        :type facing_id: str
+        :rtype: str
+        """
+        q = 'shelf_facing(Layer, \'{}\').'.format(facing_id)
+        return self.prolog_query(q)[0]['Layer'][1:-1]
+
+    def get_shelf_layer_above(self, shelf_layer_id):
+        """
+        :type shelf_layer_id: str
+        :return: shelf layer above or None if it does not exist.
+        :rtype: str
+        """
+        q = 'shelf_layer_above(\'{}\', Above).'.format(shelf_layer_id)
+        solutions = self.prolog_query(q)
+        if len(solutions) > 0:
+            return solutions[0]['Above'][1:-1]
+
+    def reset_beliefstate(self):
+        """
+        :rtype: bool
+        """
+        q = 'belief_forget, retractall(owl_parser:owl_file_loaded(Path))'
+        return self.prolog_query(q)[0]
+
+    def load_owl(self, path):
+        """
+        :type path: str
+        :rtype: bool
+        """
+        q = 'belief_parse(\'{}\')'.format(path)
+        return self.prolog_query(q)[0]
+
+    def remove_http_shit(self, s):
+        return s.split('#')[-1].split('\'')[0]
+
+    def load_barcode_to_mesh_map(self):
+        self.barcode_to_mesh = json.load(open('../../data/barcode_to_mesh.json'))
+
 
     def add_shelf_system(self):
         q = 'belief_new_object({}, R), rdf_assert(R, knowrob:describedInMap, iaishop:\'IAIShop_0\', belief_state)'.format(
@@ -246,23 +584,12 @@ class KnowRob(object):
             q = 'belief_new_object({}, ID), ' \
                 'rdf_assert(\'{}\', knowrob:properPhysicalParts, ID, belief_state),' \
                 'object_affordance_static_transform(ID, A, [_,_,T,R]),' \
-                'rdfs_individual_of(A, {})'.format(SHELF_METER, shelf_system_id, PERCEPTION_AFFORDANCE)
+                'rdfs_individual_of(A, {})'.format(SHELF_METERT5, shelf_system_id, PERCEPTION_AFFORDANCE)
             solutions = self.prolog_query(q)[0]
-            # pose.pose.position.x -= solutions['T'][0]
-            # pose.pose.position.y -= solutions['T'][1]
-            # pose.pose.position.z -= solutions['T'][2]
 
-            shelf_transform = PyKDL.Frame(PyKDL.Rotation.Quaternion(pose.pose.orientation.x,
-                                                                    pose.pose.orientation.y,
-                                                                    pose.pose.orientation.z,
-                                                                    pose.pose.orientation.w),
-                                          PyKDL.Vector(pose.pose.position.x,
-                                                       pose.pose.position.y,
-                                                       pose.pose.position.z))
+            shelf_transform = posestamped_to_kdl(pose)
             shelf_offset = PyKDL.Frame(PyKDL.Vector(-solutions['T'][0], -solutions['T'][1], -solutions['T'][2]))
             offset_shelf_transform = shelf_transform * shelf_offset # type: PyKDL.Frame
-            # transform = deepcopy(shelf.transform)  # Type: TransformStamped
-            # transform.transform = kdl_to_transform(offset_shelf_transform)
             new_pose = PoseStamped()
             new_pose.header = pose.header
             new_pose.pose.position = Point(*offset_shelf_transform.p)
@@ -274,48 +601,32 @@ class KnowRob(object):
 
         return True
 
-    def get_objects(self, type):
-        # TODO failure handling
-        objects = OrderedDict()
-        q = 'rdfs_individual_of(R, {}).'.format(type)
-        solutions = self.prolog_query(q)
-        for solution in solutions:
-            object_id = solution['R'].replace('\'', '')
-            pose_q = 'belief_at(\'{}\', R).'.format(object_id)
-            believed_pose = self.prolog_query(pose_q)[0]['R']
-            ros_pose = PoseStamped()
-            ros_pose.header.frame_id = believed_pose[0]
-            ros_pose.pose.position = Point(*believed_pose[2])
-            ros_pose.pose.orientation = Quaternion(*believed_pose[3])
-            objects[object_id] = ros_pose
-        return objects
+    # def get_shelves(self):
+    #     return self.get_objects(SHELF_METER)
 
-    def get_shelves(self):
-        return self.get_objects(SHELF_METER)
-
-    def get_perceived_frame_id(self, object_id):
-        if object_id not in self.perceived_frame_id_map:
-            q = 'object_perception_affordance_frame_name(\'{}\', F)'.format(object_id)
-            self.perceived_frame_id_map[object_id] = self.prolog_query(q)[0]['F'].replace('\'', '')
-        return self.perceived_frame_id_map[object_id]
-
-    def get_object_frame_id(self, object_id):
-        q = 'object_frame_name(\'{}\', R).'.format(object_id)
-        return self.prolog_query(q)[0]['R'].replace('\'', '')
+    # def get_perceived_frame_id(self, object_id):
+    #     if object_id not in self.perceived_frame_id_map:
+    #         q = 'object_perception_affordance_frame_name(\'{}\', F)'.format(object_id)
+    #         self.perceived_frame_id_map[object_id] = self.prolog_query(q)[0]['F'].replace('\'', '')
+    #     return self.perceived_frame_id_map[object_id]
+    #
+    # def get_object_frame_id(self, object_id):
+    #     q = 'object_frame_name(\'{}\', R).'.format(object_id)
+    #     return self.prolog_query(q)[0]['R'].replace('\'', '')
 
     # floor
-    def add_shelf_floors(self, shelf_id, floors):
-        for position in floors:
-            if position[1] < 0.13:
-                if position[2] < 0.2:
-                    layer_type = SHELF_FLOOR_STANDING_GROUND
-                else:
-                    layer_type = SHELF_FLOOR_STANDING
-            else:
-                layer_type = SHELF_FLOOR_MOUNTING
-            q = 'belief_shelf_part_at(\'{}\', {}, {}, R)'.format(shelf_id, layer_type, position[-1])
-            self.prolog_query(q)
-        return True
+    # def add_shelf_floors(self, shelf_id, floors):
+    #     for position in floors:
+    #         if position[1] < 0.13:
+    #             if position[2] < 0.2:
+    #                 layer_type = SHELF_FLOOR_STANDING_GROUND
+    #             else:
+    #                 layer_type = SHELF_FLOOR_STANDING
+    #         else:
+    #             layer_type = SHELF_FLOOR_MOUNTING
+    #         q = 'belief_shelf_part_at(\'{}\', {}, {}, R)'.format(shelf_id, layer_type, position[-1])
+    #         self.prolog_query(q)
+    #     return True
 
     def get_floor_ids(self, shelf_id):
         q = 'rdf_has(\'{}\', knowrob:properPhysicalParts, Floor), ' \
@@ -327,7 +638,7 @@ class KnowRob(object):
         shelf_frame_id = self.get_perceived_frame_id(shelf_id)
         for solution in solutions:
             floor_id = solution['Floor'].replace('\'', '')
-            floor_pose = self.tf.lookup_transform(shelf_frame_id, solution['Frame'].replace('\'', ''))
+            floor_pose = lookup_transform(shelf_frame_id, solution['Frame'].replace('\'', ''))
             if floor_pose.pose.position.z < 1.3:
                 floors.append((floor_id, floor_pose))
         floors = list(sorted(floors, key=lambda x: x[1].pose.position.z))
@@ -355,23 +666,23 @@ class KnowRob(object):
     def is_normal_floor(self, floor_id):
         return not self.is_bottom_floor(floor_id) and not self.is_hanging_foor(floor_id)
 
-    def add_separators(self, floor_id, separators):
-        for p in separators:
-            q = 'belief_shelf_part_at(\'{}\', {}, {}, _)'.format(floor_id, SEPARATOR, p.pose.position.x)
-            self.prolog_query(q)
-        return True
-
-    def add_barcodes(self, floor_id, barcodes):
-        for barcode, p in barcodes.items():
-            q = 'belief_shelf_barcode_at(\'{}\', {}, dan(\'{}\'), {}, _)'.format(floor_id, BARCODE,
-                                                                                 barcode, p.pose.position.x)
-            self.prolog_query(q)
+    # def add_separators(self, floor_id, separators):
+    #     for p in separators:
+    #         q = 'belief_shelf_part_at(\'{}\', {}, {}, _)'.format(floor_id, SEPARATOR, p.pose.position.x)
+    #         self.prolog_query(q)
+    #     return True
+    #
+    # def add_barcodes(self, floor_id, barcodes):
+    #     for barcode, p in barcodes.items():
+    #         q = 'belief_shelf_barcode_at(\'{}\', {}, dan(\'{}\'), {}, _)'.format(floor_id, BARCODE,
+    #                                                                              barcode, p.pose.position.x)
+    #         self.prolog_query(q)
 
     def add_separators_and_barcodes(self, floor_id, separators, barcodes):
         # update floor height
-        new_floor_height = np.mean([self.tf.transform_pose(
+        new_floor_height = np.mean([transform_pose(
             self.get_perceived_frame_id(floor_id), p).pose.position.z for p in separators])
-        current_floor_pose = self.tf.lookup_transform(MAP, self.get_object_frame_id(floor_id))
+        current_floor_pose = lookup_transform(MAP, self.get_object_frame_id(floor_id))
         current_floor_pose.pose.position.z += new_floor_height #- 0.015
         q = 'belief_at_update(\'{}\', {})'.format(floor_id, self.pose_to_prolog(current_floor_pose))
         # self.prolog_query(q)
@@ -434,7 +745,7 @@ class KnowRob(object):
         solutions = self.prolog_query(q)[0]
         facings = {}
         for facing_id, product, width, left_separator_id in solutions['Facings']:
-            facing_pose = self.tf.lookup_transform(self.get_perceived_frame_id(floor_id),
+            facing_pose = lookup_transform(self.get_perceived_frame_id(floor_id),
                                                    self.get_object_frame_id(facing_id))
             facings[facing_id] = (facing_pose, product, float(width), left_separator_id)
         return facings
@@ -443,11 +754,15 @@ class KnowRob(object):
         q = 'product_spawn_front_to_back(\'{}\', ObjId)'.format(facing_id)
         self.prolog_query(q)
 
-    def save_beliefstate(self, path=None):
-        if path is None:
-            path = '{}/data/beliefstate.owl'.format(RosPack().get_path('refills_first_review'))
-        q = 'rdf_save(\'{}\', belief_state)'.format(path)
-        self.prolog_query(q)
+    # def save_beliefstate(self, path=None):
+    #     if path is None:
+    #         path = '{}/data/beliefstate.owl'.format(RosPack().get_path('refills_first_review'))
+    #     q = 'rdf_save(\'{}\', belief_state)'.format(path)
+    #     self.prolog_query(q)
+
+#-----------------------------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------------------------------
 
     def save_action_graph(self, path=None):
         if path is None:

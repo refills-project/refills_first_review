@@ -20,7 +20,7 @@ from visualization_msgs.msg import Marker, MarkerArray
 from rospkg import RosPack
 
 from refills_first_review.knowrob_wrapper import KnowRob
-from refills_first_review.tfwrapper import TfWrapper
+from refills_first_review.tfwrapper import transform_pose
 
 MAP = 'map'
 
@@ -32,7 +32,6 @@ class BarcodeDetector(object):
         # TODO use paramserver [low]
         self.shelf_width = 1
 
-        self.tf = TfWrapper(4)
         self.marker_pub = rospy.Publisher('visualization_marker_array', MarkerArray, queue_size=10)
         self.marker_object_ns = 'barcode_object'
         self.marker_text_ns = 'barcode_text'
@@ -97,10 +96,10 @@ class BarcodeDetector(object):
 
     def cb(self, data):
         if self.listen:
-            p = self.tf.transform_pose(MAP, data.barcode_pose)
+            p = transform_pose(MAP, data.barcode_pose)
             if p is not None:
                 p.header.stamp = rospy.Time()
-                p = self.tf.transform_pose(self.knowrob.get_perceived_frame_id(self.floor_id), p)
+                p = transform_pose(self.knowrob.get_perceived_frame_id(self.floor_id), p)
                 if p.pose.position.x > 0.0 and p.pose.position.x < 1.0 and \
                         p.pose.position.z < 0.08 and p.pose.position.z > -0.08:
                     self.barcodes[data.barcode[1:-1]].append(p)
