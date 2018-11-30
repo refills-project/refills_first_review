@@ -225,7 +225,8 @@ class CRAM(object):
 
         self.knowrob.start_move_to_shelf_frame(shelf_system_id)
 
-        self.move_base.move_absolute_link(self.get_floor_detection_base_pose_camera(shelf_system_id))
+        width = self.knowrob.get_shelf_system_width(shelf_system_id)
+        self.move_to_shelf(shelf_system_id, width/2)
 
         self.knowrob.finish_action()
 
@@ -236,13 +237,17 @@ class CRAM(object):
         next_goal = PoseStamped()
         next_goal.header.frame_id = 'camera_link'
         next_goal.pose.orientation.w = 1
-        next_goal.pose.position.y = 1
-        for i in range(1):
+        next_goal.pose.position.y = 0.2
+        for i in range(5):
             self.knowrob.start_looking_at_location(shelf_system_id)
             self.move_arm.set_and_send_cartesian_goal(next_goal)
             if self.robosherlock.robosherlock:
                 rospy.sleep(0)
             self.knowrob.finish_action()
+
+        self.move_to_shelf(shelf_system_id, width / 2, -0.6)
+        rospy.sleep(4)
+
         floor_heights = self.robosherlock.stop_floor_detection(shelf_system_id)
         self.knowrob.add_shelf_layers(shelf_system_id, floor_heights)
         floor_ids = self.knowrob.get_floor_ids(shelf_system_id)
@@ -274,7 +279,10 @@ class CRAM(object):
         self.knowrob.start_move_to_shelf_layer()
 
         self.set_floor_scan_pose(shelf_system_id, floor_id)
-        self.move_to_shelf_left(shelf_system_id)
+        if self.knowrob.is_bottom_floor(floor_id):
+            self.move_to_shelf_left(shelf_system_id, -0.58)
+        else:
+            self.move_to_shelf_left(shelf_system_id)
         self.knowrob.finish_action()
 
         self.knowrob.start_looking_at_location(floor_id)
@@ -286,7 +294,10 @@ class CRAM(object):
 
         try:
             self.knowrob.start_move_to_shelf_frame_end()
-            self.move_to_shelf_right(shelf_system_id)
+            if self.knowrob.is_bottom_floor(floor_id):
+                self.move_to_shelf_right(shelf_system_id, -0.58)
+            else:
+                self.move_to_shelf_right(shelf_system_id)
         except TimeoutError as e:
             self.move_base.STOP()
 
@@ -305,7 +316,7 @@ class CRAM(object):
         orientation_goal = QuaternionStamped()
         orientation_goal.header.frame_id = self.move_arm.tip
         if self.knowrob.is_bottom_floor(shelf_layer_id):
-            orientation_goal = self.get_tilt_orientation_goal(-0.6)
+            orientation_goal = self.get_tilt_orientation_goal(0.0)
         else:
             orientation_goal = self.get_tilt_orientation_goal(0.0)
 
@@ -318,7 +329,7 @@ class CRAM(object):
         trans_goal.point = t_base_footprint___camera.pose.position
 
         if self.knowrob.is_bottom_floor(shelf_layer_id):
-            trans_goal.point.z += 0.2
+            trans_goal.point.z += 0.1
         else:
             trans_goal.point.z += 0.05
 
@@ -326,23 +337,24 @@ class CRAM(object):
         self.move_arm.set_translation_goal(trans_goal)
         self.move_arm.send_cartesian_goal()
 
-    def move_to_shelf_left(self, shelf_system_id):
-        self.move_to_shelf(shelf_system_id, 0.1)
+    def move_to_shelf_left(self, shelf_system_id, y=-0.5):
+        self.move_to_shelf(shelf_system_id, 0.1, y)
 
-    def move_to_shelf_right(self, shelf_system_id):
+    def move_to_shelf_right(self, shelf_system_id, y=-0.5):
         width = self.knowrob.get_shelf_system_width(shelf_system_id)
-        self.move_to_shelf(shelf_system_id, width - 0.18)
+        self.move_to_shelf(shelf_system_id, width - 0.18, y)
 
-    def move_to_shelf(self, shelf_system_id, x):
+    def move_to_shelf(self, shelf_system_id, x, y=-0.5):
         goal_pose = PoseStamped()
         goal_pose.header.frame_id = self.knowrob.get_perceived_frame_id(shelf_system_id)
         goal_pose.pose.position.x = x
-        goal_pose.pose.position.y = -0.5
+        goal_pose.pose.position.y = y
         goal_pose.pose.orientation = Quaternion(*quaternion_about_axis(0, [0, 0, 1]))
         self.move_base.move_absolute_link(goal_pose)
 
     def count_floor(self, shelf_system_id, shelf_layer_id):
         # TODO do absolute base movements
+
         rospy.loginfo('counting objects on floor {}'.format(shelf_layer_id))
         self.knowrob.start_shelf_layer_counting()
         facings = self.knowrob.get_facings(shelf_layer_id)
@@ -393,8 +405,8 @@ class CRAM(object):
     def goto_counting_position(self, shelf_system_id, shelf_layer_id, facing_id):
         p_base_footprint___layer = lookup_transform('base_footprint',
                                                     self.knowrob.get_perceived_frame_id(shelf_layer_id))
-        self.move_arm.set_orientation_goal(self.get_tilt_orientation_goal(-0.5))
-        self.move_arm.set_translation_goal(self.get_height_goal(p_base_footprint___layer.pose.position.z + 0.2))
+        self.move_arm.set_orientation_goal(self.get_tilt_orientation_goal(-0.35))
+        self.move_arm.set_translation_goal(self.get_height_goal(p_base_footprint___layer.pose.position.z + 0.25))
         self.move_arm.send_cartesian_goal()
 
         p_layer___facing = lookup_transform(self.knowrob.get_perceived_frame_id(shelf_system_id),

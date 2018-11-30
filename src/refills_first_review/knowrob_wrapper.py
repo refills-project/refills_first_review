@@ -419,7 +419,7 @@ class KnowRob(object):
                 layer_type = self.get_bottom_layer_type(shelf_system_id)
             else:
                 layer_type = self.get_standing_layer_type(shelf_system_id)
-            q = 'belief_shelf_part_at(\'{}\', {}, {}, R)'.format(shelf_system_id, layer_type, height[-1])
+            q = 'belief_shelf_part_at(\'{}\', {}, {}, R)'.format(shelf_system_id, layer_type, height)
             self.prolog_query(q)
         return True
 
@@ -656,7 +656,7 @@ class KnowRob(object):
         return self.get_floor_position(floor_id).pose.position.z > 1.2
 
     def is_bottom_floor(self, floor_id):
-        return self.get_floor_position(floor_id).pose.position.z < 0.2
+        return self.get_floor_position(floor_id).pose.position.z < 0.3
 
     def is_hanging_foor(self, floor_id):
         q = 'rdfs_individual_of(\'{}\', {})'.format(floor_id, SHELF_FLOOR_MOUNTING)
@@ -685,7 +685,7 @@ class KnowRob(object):
         current_floor_pose = lookup_transform(MAP, self.get_object_frame_id(floor_id))
         current_floor_pose.pose.position.z += new_floor_height #- 0.015
         q = 'belief_at_update(\'{}\', {})'.format(floor_id, self.pose_to_prolog(current_floor_pose))
-        # self.prolog_query(q)
+        self.prolog_query(q)
 
         for p in separators:
             q = 'belief_shelf_part_at(\'{}\', {}, norm({}), _)'.format(floor_id, SEPARATOR, p.pose.position.x)

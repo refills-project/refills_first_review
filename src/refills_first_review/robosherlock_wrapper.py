@@ -18,10 +18,10 @@ from refills_first_review.separator_detection import SeparatorClustering
 from refills_first_review.tfwrapper import transform_pose, lookup_transform
 
 FLOORS = {
-    0: [[0, 0, 0.15], [0, 0.1, 0.55], [0, 0.1, 0.88], [0, 0.1, 1.17], [0, 0.1, 1.43]],
-    1: [[0, 0, 0.15], [0, 0.1, 0.38], [0, 0.1, 0.59], [0, 0.2, 1.11], [0, 0.2, 1.42]],
-    2: [[0, 0, 0.15], [0, 0.1, 0.47], [0, 0.1, 0.76], [0, 0.1, 1.06], [0, 0.1, 1.39]],
-    3: [[0, 0, 0.15], [0, 0.1, 0.43], [0, 0.1, 0.68], [0, 0.1, 0.93], [0, 0.1, 1.18], [0, 0.1, 1.43]],
+    0: [0.15, 0.55, 0.88, 1.17, 1.43],
+    1: [0.15, 0.38, 0.59, 1.11, 1.42],
+    2: [0.15, 0.47, 0.76, 1.06, 1.39],
+    3: [0.15, 0.43, 0.68, 0.93, 1.18, 1.43],
 }
 
 MAP = 'map'
@@ -36,7 +36,7 @@ class RoboSherlock(object):
         self.separator_detection = SeparatorClustering(knowrob)
         self.baseboard_detection = BaseboardDetector()
         self.barcode_detection = BarcodeDetector(knowrob)
-        self.ring_light_srv = rospy.ServiceProxy('IAI_ringlight_controller', iai_ringlight_in)
+        self.ring_light_srv = rospy.ServiceProxy('iai_ringlight_controller', iai_ringlight_in)
         self.floor_detection = True
         self.counting = True
         try:
@@ -126,10 +126,8 @@ class RoboSherlock(object):
                 p = message_converter.convert_dictionary_to_ros_message('geometry_msgs/PoseStamped',
                                                                         json.loads(floor)['poses'][0]['pose_stamped'])
                 p = transform_pose(shelf_frame, p)
-                floors.append([0,
-                               p.pose.position.y,
-                               p.pose.position.z])
-            floors = list(sorted(floors, key=lambda x: x[-1]))
+                floors.append(p.pose.position.z)
+            floors = list(sorted(floors))
             # floors = [x for x in floors if x[-1] > 0.3]
             # floors = [FLOORS[0][0]] + floors
             print('detected shelfs at heights: {}'.format(floors))
@@ -140,7 +138,19 @@ class RoboSherlock(object):
         else:
             shelf_pose = lookup_transform(MAP, shelf_frame)
             floors = FLOORS[int(shelf_pose.pose.position.x)]
+        floors = self.merge_close_shelf_layer(floors)
         return floors
+
+    def merge_close_shelf_layer(self, layer_heights):
+        result = []
+        for e in layer_heights:
+            if len(result) == 0:
+                result.append(e)
+            elif abs(e - result[-1]) > 0.07:
+                result.append(e)
+            else:
+                result[-1] = (e + result[-1]) / 2
+        return result
 
     def count(self, facing_id, perceived_shelf_frame_id):
         self.set_ring_light(True)

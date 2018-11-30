@@ -1,0 +1,8 @@
+<launch>
+  <include file="$(find refills_first_review)/launch/donbot_giskard.launch" >
+  	<arg name="sim" value="true"/>
+  </include>
+
+  <include file="$(find knowrob_refills)/launch/knowrob_refills.launch"/>
+
+</launch>
